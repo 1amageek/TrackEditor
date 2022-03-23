@@ -25,6 +25,22 @@ public struct ExpandAction {
     }
 }
 
+public struct TrackEditorOptions {
+    public var headerWidth: CGFloat = 200
+    public var trackHeight: CGFloat = 80
+    public var barWidth: CGFloat = 100
+
+    public init(
+        headerWidth: CGFloat = 200,
+        trackHeight: CGFloat = 80,
+        barWidth: CGFloat = 100
+    ) {
+        self.headerWidth = headerWidth
+        self.trackHeight = trackHeight
+        self.barWidth = barWidth
+    }
+}
+
 public struct TrackEditor<
     Tracks: RandomAccessCollection,
     SubTracks: RandomAccessCollection,
@@ -46,6 +62,8 @@ public struct TrackEditor<
 
     var numberOfBars: Int
 
+    var options: TrackEditorOptions
+
     var subTracksForTrack: (Track) -> SubTracks
 
     var regionsForTrack: (Track) -> Array<Region>
@@ -62,17 +80,16 @@ public struct TrackEditor<
 
     var subTrackHeader: (SubTrack) -> SubTrackHeader
 
-    @State var headerWidth: CGFloat = 200
+    var headerWidth: CGFloat { options.headerWidth }
 
-    @State var rulerHeight: CGFloat = 44
+    var trackHeight: CGFloat { options.trackHeight }
 
-    @State var trackHeight: CGFloat = 80
-
-    @State var barWidth: CGFloat = 100
+    var barWidth: CGFloat { options.barWidth }
 
     public init(
         _ trasks: Tracks,
         numberOfBars: Int,
+        options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping (Region) -> Content,
         @ViewBuilder rulerHeader: @escaping () -> RulerHeader,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
@@ -85,6 +102,7 @@ public struct TrackEditor<
         self.tracks = trasks
         self.content = content
         self.numberOfBars = numberOfBars
+        self.options = options
         self.rulerHeader = rulerHeader
         self.ruler = ruler
         self.trackHeader = trackHeader
@@ -94,18 +112,12 @@ public struct TrackEditor<
         self.regionsForSubTrack = regionsForSubTrack
     }
 
-    var trackEditorAreaSize: CGSize {
-        let width: CGFloat = barWidth * CGFloat(numberOfBars)
-        let heigth: CGFloat = trackHeight * CGFloat(tracks.count)
-        return CGSize(width: width, height: heigth)
-    }
-
     public var body: some View {
         GeometryReader { proxy in
             ScrollViewReader { _ in
                 ScrollView([.vertical, .horizontal], showsIndicators: true) {
                     contentView
-                        .frame(width: trackEditorAreaSize.width + headerWidth, height: proxy.size.height, alignment: .top)
+                        .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                         .background(Color(.systemBackground))
                 }
                 .clipped()
@@ -120,7 +132,7 @@ public struct TrackEditor<
                 ForEach(tracks, id: \.id) { track in
                     TrackView(track,
                               numberOfBars: numberOfBars,
-                              trackEditorAreaSize: trackEditorAreaSize,
+                              options: options,
                               content: content,
                               rulerHeader: rulerHeader,
                               ruler: ruler,
@@ -142,7 +154,6 @@ public struct TrackEditor<
                             .frame(width: headerWidth)
                     }
                 }
-                .frame(width: trackEditorAreaSize.width + headerWidth, height: rulerHeight, alignment: .leading)
             }
         }
     }
@@ -162,6 +173,8 @@ extension TrackEditor {
 
         var numberOfBars: Int
 
+        var options: TrackEditorOptions
+
         var subTracksForTrack: (Track) -> SubTracks
 
         var regionsForTrack: (Track) -> Array<Region>
@@ -178,20 +191,18 @@ extension TrackEditor {
 
         var subTrackHeader: (SubTrack) -> SubTrackHeader
 
-        var headerWidth: CGFloat = 200
+        var headerWidth: CGFloat { options.headerWidth }
 
-        var rulerHeight: CGFloat = 44
+        var trackHeight: CGFloat { options.trackHeight }
 
-        var trackHeight: CGFloat = 80
+        var barWidth: CGFloat { options.barWidth }
 
-        var barWidth: CGFloat = 100
-
-        var trackEditorAreaSize: CGSize
+        var trackEditorAreaWidth: CGFloat { barWidth * CGFloat(numberOfBars) }
 
         public init(
             _ trask: Track,
             numberOfBars: Int,
-            trackEditorAreaSize: CGSize,
+            options: TrackEditorOptions,
             @ViewBuilder content: @escaping (Region) -> Content,
             @ViewBuilder rulerHeader: @escaping () -> RulerHeader,
             @ViewBuilder ruler: @escaping (Int) -> Ruler,
@@ -204,7 +215,7 @@ extension TrackEditor {
             self.track = trask
             self.content = content
             self.numberOfBars = numberOfBars
-            self.trackEditorAreaSize = trackEditorAreaSize
+            self.options = options
             self.rulerHeader = rulerHeader
             self.ruler = ruler
             self.trackHeader = trackHeader
@@ -217,10 +228,10 @@ extension TrackEditor {
         var body: some View {
             VStack(spacing: 0) {
                 laneBackground()
-                    .frame(width: trackEditorAreaSize.width + headerWidth, height: trackHeight, alignment: .leading)
+                    .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
                     .overlay {
                         trackLaneView(track: track)
-                            .frame(width: trackEditorAreaSize.width + headerWidth, height: trackHeight, alignment: .leading)
+                            .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
                     }
                 subTrackView(track: track)
             }
@@ -233,10 +244,10 @@ extension TrackEditor {
                 if !subTracks.isEmpty {
                     ForEach(subTracks, id: \.id) { subTrack in
                         laneBackground()
-                            .frame(width: trackEditorAreaSize.width + headerWidth, height: trackHeight, alignment: .leading)
+                            .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
                             .overlay {
                                 subTrackLaneView(subTrack: subTrack)
-                                    .frame(width: trackEditorAreaSize.width + headerWidth, height: trackHeight, alignment: .leading)
+                                    .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
                             }
                     }
                 }
@@ -370,7 +381,7 @@ struct TrackEditor_Previews: PreviewProvider {
                     Region(label: "2", start: 4, end: 6),
                     Region(label: "3", start: 7, end: 8),
                     Region(label: "4", start: 8, end: 10),
-                    Region(label: "5", start: 12, end: 19)
+                    Region(label: "5", start: 86, end: 100)
                 ], subTracks: [
                     Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
                         Region(label: "0", start: 0, end: 4),
@@ -431,16 +442,18 @@ struct TrackEditor_Previews: PreviewProvider {
                         Region(label: "4", start: 8, end: 10)
                     ])
                 ]),
-            ], numberOfBars: 20) { region in
+            ], numberOfBars: 120, options: TrackEditorOptions(headerWidth: 200, trackHeight: 64, barWidth: 120)) { region in
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.blue.opacity(0.7))
+                    .fill(.green.opacity(0.7))
                     .padding(1)
             } rulerHeader: {
                 Color(.systemGray6)
+                    .frame(height: 44)
             } ruler: { index in
                 HStack {
-                    Spacer()
                     Text("\(index)")
+                        .padding(.horizontal, 12)
+                    Spacer()
                     Divider()
                 }
                 .frame(maxWidth: .infinity)
