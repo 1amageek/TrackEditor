@@ -397,7 +397,9 @@ struct TrackEditor_Previews: PreviewProvider {
             ScrollViewReader { proxy in
                 VStack {
                     Button("Scroll") {
-                        proxy.scrollTo(20)
+                        withAnimation {
+                            proxy.scrollTo(20)
+                        }
                     }
                     TrackEditor(30) {
                         ForEach(data, id: \.id) { track in
