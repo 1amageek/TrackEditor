@@ -257,6 +257,33 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
     }
 }
 
+extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane == EmptyView {
+
+    public init(
+        _ data: Array<Data>,
+        @ViewBuilder content: @escaping (Data) -> Content,
+        @ViewBuilder header: @escaping (ExpandAction) -> Header
+    ) {
+        self.data = data
+        self.content = content
+        self.header = header
+        self.subTrackLane = { EmptyView() }
+    }
+
+    var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(numberOfBars) }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            laneBackground()
+                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+                .overlay {
+                    trackLane()
+                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+                }
+        }
+    }
+}
+
 struct TrackEditor_Previews: PreviewProvider {
 
     public struct Track: Identifiable, Hashable {
