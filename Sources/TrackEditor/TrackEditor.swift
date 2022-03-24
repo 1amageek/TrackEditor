@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public protocol TrackRegioning {
+public protocol LaneRegioning {
     var start: Int { get }
     var end: Int { get }
 }
@@ -41,87 +41,65 @@ public struct TrackEditorOptions {
     }
 }
 
-public struct TrackEditor<
-    Tracks: RandomAccessCollection,
-    SubTracks: RandomAccessCollection,
-    Region: Hashable & TrackRegioning,
-    RulerHeader: View,
-    Ruler: View,
-    TrackHeader: View,
-    SubTrackHeader: View,
-    Content: View
->: View where Tracks.Element: Identifiable, SubTracks.Element: Identifiable {
+private struct TrackEditorOptionsKey: EnvironmentKey {
+    static let defaultValue: TrackEditorOptions = TrackEditorOptions()
+}
 
-    @Environment(\.dismiss) var dismiss
+private struct TrackEditorNumberOfBarsKey: EnvironmentKey {
+    static let defaultValue: Int = 100
+}
 
-    public typealias Track = Tracks.Element
+extension EnvironmentValues {
 
-    public typealias SubTrack = SubTracks.Element
+    var numberOfBars: Int {
+        get { self[TrackEditorNumberOfBarsKey.self] }
+        set { self[TrackEditorNumberOfBarsKey.self] = newValue }
+    }
 
-    var tracks: Tracks
+    var trackEditorOptions: TrackEditorOptions {
+        get { self[TrackEditorOptionsKey.self] }
+        set { self[TrackEditorOptionsKey.self] = newValue }
+    }
+}
+
+public struct TrackEditor<Content, Header, Ruler> {
 
     var numberOfBars: Int
 
     var options: TrackEditorOptions
 
-    var subTracksForTrack: (Track) -> SubTracks
+    var content: () -> Content
 
-    var regionsForTrack: (Track) -> Array<Region>
-
-    var regionsForSubTrack: (SubTrack) -> Array<Region>
-
-    var content: (Region) -> Content
-
-    var rulerHeader: () -> RulerHeader
+    var header: () -> Header
 
     var ruler: (Int) -> Ruler
 
-    var trackHeader: (Track, ExpandAction) -> TrackHeader
+}
 
-    var subTrackHeader: (SubTrack) -> SubTrackHeader
-
-    var headerWidth: CGFloat { options.headerWidth }
-
-    var trackHeight: CGFloat { options.trackHeight }
-
-    var barWidth: CGFloat { options.barWidth }
+extension TrackEditor: View where Content: View, Header: View, Ruler: View {
 
     public init(
-        _ trasks: Tracks,
-        numberOfBars: Int,
+        _ numberOfBars: Int,
         options: TrackEditorOptions = TrackEditorOptions(),
-        @ViewBuilder content: @escaping (Region) -> Content,
-        @ViewBuilder rulerHeader: @escaping () -> RulerHeader,
-        @ViewBuilder ruler: @escaping (Int) -> Ruler,
-        @ViewBuilder trackHeader: @escaping (Track, ExpandAction) -> TrackHeader,
-        @ViewBuilder subTrackHeader: @escaping (SubTrack) -> SubTrackHeader,
-        subTracksForTrack: @escaping (Track) -> SubTracks,
-        regionsForTrack: @escaping (Track) -> Array<Region>,
-        regionsForSubTrack:  @escaping (SubTrack) -> Array<Region>
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder header: @escaping () -> Header,
+        @ViewBuilder ruler: @escaping (Int) -> Ruler
     ) {
-        self.tracks = trasks
-        self.content = content
         self.numberOfBars = numberOfBars
         self.options = options
-        self.rulerHeader = rulerHeader
+        self.content = content
+        self.header = header
         self.ruler = ruler
-        self.trackHeader = trackHeader
-        self.subTrackHeader = subTrackHeader
-        self.subTracksForTrack = subTracksForTrack
-        self.regionsForTrack = regionsForTrack
-        self.regionsForSubTrack = regionsForSubTrack
     }
 
     public var body: some View {
         GeometryReader { proxy in
-            ScrollViewReader { _ in
-                ScrollView([.vertical, .horizontal], showsIndicators: true) {
-                    contentView
-                        .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-                        .background(Color(.systemBackground))
-                }
-                .clipped()
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                contentView
+                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+//                    .background(Color(.systemBackground))
             }
+            .clipped()
         }
     }
 
@@ -129,29 +107,19 @@ public struct TrackEditor<
     var contentView: some View {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
-                ForEach(tracks, id: \.id) { track in
-                    TrackView(track,
-                              numberOfBars: numberOfBars,
-                              options: options,
-                              content: content,
-                              rulerHeader: rulerHeader,
-                              ruler: ruler,
-                              trackHeader: trackHeader,
-                              subTrackHeader: subTrackHeader,
-                              subTracksForTrack: subTracksForTrack,
-                              regionsForTrack: regionsForTrack,
-                              regionsForSubTrack: regionsForSubTrack)
-                }
+                content()
+                    .environment(\.numberOfBars, numberOfBars)
+                    .environment(\.trackEditorOptions, options)
             } header: {
                 LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
                         ForEach(0..<numberOfBars, id: \.self) { index in
                             ruler(index)
-                                .frame(width: barWidth)
+                                .frame(width: options.barWidth)
                         }
                     } header: {
-                        rulerHeader()
-                            .frame(width: headerWidth)
+                        header()
+                            .frame(width: options.headerWidth)
                     }
                 }
             }
@@ -159,168 +127,101 @@ public struct TrackEditor<
     }
 }
 
-extension TrackEditor {
+public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
-    struct TrackView: View {
+    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
-        typealias Track = Tracks.Element
+    @Environment(\.numberOfBars) var numberOfBars: Int
 
-        typealias SubTrack = SubTracks.Element
+    @State var isSubTracksExpanded: Bool = false
 
-        @State var isSubTracksExpandActioned: Bool = false
+    var data: Array<Data>
 
-        var track: Track
+    var content: (Data) -> Content
 
-        var numberOfBars: Int
+    var header: (ExpandAction) -> Header
 
-        var options: TrackEditorOptions
+    var subTrackLane: () -> SubTrackLane
 
-        var subTracksForTrack: (Track) -> SubTracks
+}
 
-        var regionsForTrack: (Track) -> Array<Region>
+extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane: View {
 
-        var regionsForSubTrack: (SubTrack) -> Array<Region>
+    public init(
+        _ data: Array<Data>,
+        @ViewBuilder content: @escaping (Data) -> Content,
+        @ViewBuilder header: @escaping (ExpandAction) -> Header,
+        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+    ) {
+        self.data = data
+        self.content = content
+        self.header = header
+        self.subTrackLane = subTrackLane
+    }
 
-        var content: (Region) -> Content
+    var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(numberOfBars) }
 
-        var rulerHeader: () -> RulerHeader
-
-        var ruler: (Int) -> Ruler
-
-        var trackHeader: (Track, ExpandAction) -> TrackHeader
-
-        var subTrackHeader: (SubTrack) -> SubTrackHeader
-
-        var headerWidth: CGFloat { options.headerWidth }
-
-        var trackHeight: CGFloat { options.trackHeight }
-
-        var barWidth: CGFloat { options.barWidth }
-
-        var trackEditorAreaWidth: CGFloat { barWidth * CGFloat(numberOfBars) }
-
-        public init(
-            _ trask: Track,
-            numberOfBars: Int,
-            options: TrackEditorOptions,
-            @ViewBuilder content: @escaping (Region) -> Content,
-            @ViewBuilder rulerHeader: @escaping () -> RulerHeader,
-            @ViewBuilder ruler: @escaping (Int) -> Ruler,
-            @ViewBuilder trackHeader: @escaping (Track, ExpandAction) -> TrackHeader,
-            @ViewBuilder subTrackHeader: @escaping (SubTrack) -> SubTrackHeader,
-            subTracksForTrack: @escaping (Track) -> SubTracks,
-            regionsForTrack: @escaping (Track) -> Array<Region>,
-            regionsForSubTrack:  @escaping (SubTrack) -> Array<Region>
-        ) {
-            self.track = trask
-            self.content = content
-            self.numberOfBars = numberOfBars
-            self.options = options
-            self.rulerHeader = rulerHeader
-            self.ruler = ruler
-            self.trackHeader = trackHeader
-            self.subTrackHeader = subTrackHeader
-            self.subTracksForTrack = subTracksForTrack
-            self.regionsForTrack = regionsForTrack
-            self.regionsForSubTrack = regionsForSubTrack
+    public var body: some View {
+        VStack(spacing: 0) {
+            laneBackground()
+                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+                .overlay {
+                    trackLane()
+                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+                }
+            subTrackView()
         }
+    }
 
-        var body: some View {
-            VStack(spacing: 0) {
-                laneBackground()
-                    .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
-                    .overlay {
-                        trackLaneView(track: track)
-                            .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
-                    }
-                subTrackView(track: track)
+    @ViewBuilder
+    func trackLane() -> some View {
+        let expand: ExpandAction = ExpandAction {
+            withAnimation {
+                self.isSubTracksExpanded.toggle()
             }
         }
-
-        @ViewBuilder
-        func subTrackView(track: Track) -> some View {
-            if isSubTracksExpandActioned {
-                let subTracks = subTracksForTrack(track)
-                if !subTracks.isEmpty {
-                    ForEach(subTracks, id: \.id) { subTrack in
-                        laneBackground()
-                            .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
-                            .overlay {
-                                subTrackLaneView(subTrack: subTrack)
-                                    .frame(width: trackEditorAreaWidth + headerWidth, height: trackHeight, alignment: .leading)
-                            }
-                    }
+        LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
+            Section {
+                ForEach(data, id: \.self) { region in
+                    let index = data.firstIndex(of: region)!
+                    let prevIndex = index - 1
+                    let prevEnd = prevIndex < 0 ? 0 : data[prevIndex].end
+                    let leadingPadding = CGFloat(region.start - prevEnd) * options.barWidth
+                    let width = CGFloat(region.end - region.start) * options.barWidth
+                    content(region)
+                        .frame(width: width)
+                        .padding(.leading, leadingPadding)
                 }
+            } header: {
+                header(expand)
+                    .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
+    }
 
-        @ViewBuilder
-        func trackLaneView(track: Track) -> some View {
-            let regions = regionsForTrack(track)
-            let expand: ExpandAction = ExpandAction {
-                withAnimation {
-                    self.isSubTracksExpandActioned.toggle()
-                }
-            }
-            LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
-                Section {
-                    ForEach(regions, id: \.self) { region in
-                        let index = regions.firstIndex(of: region)!
-                        let prevIndex = index - 1
-                        let prevEnd = prevIndex < 0 ? 0 : regions[prevIndex].end
-                        let leadingPadding = CGFloat(region.start - prevEnd) * barWidth
-                        let width = CGFloat(region.end - region.start) * barWidth
-                        content(region)
-                            .frame(width: width)
-                            .padding(.leading, leadingPadding)
-                    }
-                } header: {
-                    trackHeader(track, expand)
-                        .frame(width: headerWidth, height: trackHeight)
-                }
-            }
+    @ViewBuilder
+    func subTrackView() -> some View {
+        if isSubTracksExpanded {
+            subTrackLane()
         }
+    }
 
-        @ViewBuilder
-        func subTrackLaneView(subTrack: SubTrack) -> some View {
-            let regions = regionsForSubTrack(subTrack)
-            LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
-                Section {
-                    ForEach(regions, id: \.self) { region in
-                        let index = regions.firstIndex(of: region)!
-                        let prevIndex = index - 1
-                        let prevEnd = prevIndex < 0 ? 0 : regions[prevIndex].end
-                        let leadingPadding = CGFloat(region.start - prevEnd) * barWidth
-                        let width = CGFloat(region.end - region.start) * barWidth
-                        content(region)
-                            .frame(width: width)
-                            .padding(.leading, leadingPadding)
-                    }
-                } header: {
-                    subTrackHeader(subTrack)
-                        .frame(width: headerWidth, height: trackHeight)
+    @ViewBuilder
+    func laneBackground() -> some View {
+        LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
+            Section {
+                ForEach(0..<numberOfBars, id: \.self) { _ in
+                    Color(.systemGray4)
+                        .padding(0.5)
+                        .frame(width: options.barWidth)
                 }
-            }
-        }
-
-        @ViewBuilder
-        func laneBackground() -> some View {
-            LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
-                Section {
-                    ForEach(0..<numberOfBars, id: \.self) { _ in
-                        Color(.systemGray4)
-                            .padding(0.5)
-                            .frame(width: barWidth)
-                    }
-                } header: {
-                    Spacer()
-                        .frame(width: headerWidth, height: trackHeight)
-                }
+            } header: {
+                Spacer()
+                    .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
     }
 }
-
 
 struct TrackEditor_Previews: PreviewProvider {
 
@@ -355,7 +256,7 @@ struct TrackEditor_Previews: PreviewProvider {
         }
     }
 
-    public struct Region: Hashable, TrackRegioning {
+    public struct Region: Hashable, LaneRegioning {
 
         public var label: String
         public var start: Int
@@ -372,81 +273,177 @@ struct TrackEditor_Previews: PreviewProvider {
         }
     }
 
-    struct ContentView: View {
-
-        var body: some View {
-            TrackEditor([
-                Track(id: "0", label: "Label0", regions: [
-                    Region(label: "0", start: 0, end: 3),
-                    Region(label: "2", start: 4, end: 6),
-                    Region(label: "3", start: 7, end: 8),
-                    Region(label: "4", start: 8, end: 10),
-                    Region(label: "5", start: 86, end: 100)
-                ], subTracks: [
-                    Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ])
-                ]),
-                Track(id: "1", label: "Label1", regions: [
+    static let data = [
+        Track(id: "0", label: "Label0", regions: [
+            Region(label: "0", start: 0, end: 3),
+            Region(label: "2", start: 4, end: 6),
+            Region(label: "3", start: 7, end: 8),
+            Region(label: "4", start: 8, end: 10),
+            Region(label: "5", start: 86, end: 100)
+        ], subTracks: [
+            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ], subTracks: [
+                Track(id: "1", parentID: "0", label: "Sub SubTack label 0", regions: [
                     Region(label: "0", start: 0, end: 4),
                     Region(label: "2", start: 4, end: 8),
                     Region(label: "4", start: 8, end: 10)
-                ], subTracks: [
-                    Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ])
                 ]),
-                Track(id: "2", label: "Label2", regions: [
-                    Region(label: "0", start: 2, end: 3),
-                    Region(label: "2", start: 4, end: 6),
-                    Region(label: "3", start: 7, end: 10),
-                    Region(label: "5", start: 10, end: 15)
-                ], subTracks: [
-                    Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ]),
-                    Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                        Region(label: "0", start: 0, end: 4),
-                        Region(label: "2", start: 4, end: 8),
-                        Region(label: "4", start: 8, end: 10)
-                    ])
+                Track(id: "3", parentID: "0", label: "Sub SubTack label 0", regions: [
+                    Region(label: "0", start: 0, end: 4),
+                    Region(label: "2", start: 4, end: 8),
+                    Region(label: "4", start: 8, end: 10)
                 ]),
-            ], numberOfBars: 120, options: TrackEditorOptions(headerWidth: 200, trackHeight: 64, barWidth: 120)) { region in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.green.opacity(0.7))
-                    .padding(1)
-            } rulerHeader: {
+                Track(id: "4", parentID: "0", label: "Sub SubTack label 0", regions: [
+                    Region(label: "0", start: 0, end: 4),
+                    Region(label: "2", start: 4, end: 8),
+                    Region(label: "4", start: 8, end: 10)
+                ])
+            ]),
+            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ]),
+            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ])
+        ]),
+        Track(id: "1", label: "Label1", regions: [
+            Region(label: "0", start: 0, end: 4),
+            Region(label: "2", start: 4, end: 8),
+            Region(label: "4", start: 8, end: 10)
+        ], subTracks: [
+            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ]),
+            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ]),
+            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ])
+        ]),
+        Track(id: "2", label: "Label2", regions: [
+            Region(label: "0", start: 2, end: 3),
+            Region(label: "2", start: 4, end: 6),
+            Region(label: "3", start: 7, end: 10),
+            Region(label: "5", start: 10, end: 15)
+        ], subTracks: [
+            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ]),
+            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ]),
+            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
+                Region(label: "0", start: 0, end: 4),
+                Region(label: "2", start: 4, end: 8),
+                Region(label: "4", start: 8, end: 10)
+            ])
+        ]),
+    ]
+
+    struct ContentView: View {
+        var body: some View {
+            TrackEditor(32) {
+                ForEach(data, id: \.id) { track in
+                    TrackLane(track.regions) { region in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.green.opacity(0.7))
+                            .padding(1)
+                    } header: { expand in
+                        VStack {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(track.label)
+                                        .bold()
+                                    Button("ExpandAction") {
+                                        expand()
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.top, 8)
+                            Spacer()
+                            Divider()
+                        }
+                        .frame(maxHeight: .infinity)
+                        .background(Color(.systemGray5))
+                    } subTrackLane: {
+                        ForEach(track.subTracks) { track in
+                            TrackLane(track.regions) { region in
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(.green.opacity(0.7))
+                                    .padding(1)
+                            } header: { expand in
+                                VStack {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(track.label)
+                                                .bold()
+                                            Button("ExpandAction") {
+                                                expand()
+                                            }
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.top, 8)
+                                    Spacer()
+                                    Divider()
+                                }
+                                .frame(maxHeight: .infinity)
+                                .background(Color(.systemGray5))
+                            } subTrackLane: {
+                                ForEach(track.subTracks) { track in
+                                    TrackLane(track.regions) { region in
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(.green.opacity(0.7))
+                                            .padding(1)
+                                    } header: { expand in
+                                        VStack {
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(track.label)
+                                                        .bold()
+                                                    Button("ExpandAction") {
+                                                        expand()
+                                                    }
+                                                }
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 14)
+                                            .padding(.top, 8)
+                                            Spacer()
+                                            Divider()
+                                        }
+                                        .frame(maxHeight: .infinity)
+                                        .background(Color(.systemGray5))
+                                    } subTrackLane: {
+                                        EmptyView()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } header: {
                 Color(.systemGray6)
                     .frame(height: 44)
             } ruler: { index in
@@ -458,48 +455,6 @@ struct TrackEditor_Previews: PreviewProvider {
                 }
                 .frame(maxWidth: .infinity)
                 .background(Color(.systemBackground))
-            } trackHeader: { track, expand in
-                VStack {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(track.label)
-                                .bold()
-                            Button("ExpandAction") {
-                                expand()
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8)
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxHeight: .infinity)
-                .background(Color(.systemGray5))
-            } subTrackHeader: { subTrack in
-                VStack {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(subTrack.label)
-                                .bold()
-                        }
-                        .padding(.leading, 16)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8)
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxHeight: .infinity)
-                .background(Color(.systemGray5))
-            } subTracksForTrack: { track -> [Track] in
-                return track.subTracks
-            } regionsForTrack: { track in
-                return track.regions.sorted(by: { $0.end < $1.end })
-            } regionsForSubTrack: { subTrack in
-                return subTrack.regions.sorted(by: { $0.end < $1.end })
             }
         }
     }
