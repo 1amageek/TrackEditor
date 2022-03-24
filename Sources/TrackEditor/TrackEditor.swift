@@ -26,10 +26,9 @@ public struct ExpandAction {
 }
 
 public struct TrackEditorOptions {
-    public var headerWidth: CGFloat = 200
-    public var trackHeight: CGFloat = 80
-    public var barWidth: CGFloat = 100
-
+    public var headerWidth: CGFloat
+    public var trackHeight: CGFloat
+    public var barWidth: CGFloat
     public init(
         headerWidth: CGFloat = 200,
         trackHeight: CGFloat = 80,
@@ -97,14 +96,13 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 contentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-//                    .background(Color(.systemBackground))
             }
             .clipped()
         }
     }
 
     @ViewBuilder
-    var contentView: some View {
+    private var contentView: some View {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 content()
@@ -122,6 +120,42 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
                             .frame(width: options.headerWidth)
                     }
                 }
+            }
+        }
+    }
+}
+
+extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyView {
+
+    public init(
+        _ numberOfBars: Int,
+        options: TrackEditorOptions = TrackEditorOptions(),
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.numberOfBars = numberOfBars
+        self.options = options
+        self.content = content
+        self.header = { EmptyView() }
+        self.ruler = { _ in EmptyView() }
+    }
+
+    public var body: some View {
+        GeometryReader { proxy in
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                headerlessContentView
+                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+            }
+            .clipped()
+        }
+    }
+
+    @ViewBuilder
+    private var headerlessContentView: some View {
+        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
+            Section {
+                content()
+                    .environment(\.numberOfBars, numberOfBars)
+                    .environment(\.trackEditorOptions, options)
             }
         }
     }
@@ -360,33 +394,13 @@ struct TrackEditor_Previews: PreviewProvider {
 
     struct ContentView: View {
         var body: some View {
-            TrackEditor(32) {
-                ForEach(data, id: \.id) { track in
-                    TrackLane(track.regions) { region in
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.green.opacity(0.7))
-                            .padding(1)
-                    } header: { expand in
-                        VStack {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(track.label)
-                                        .bold()
-                                    Button("ExpandAction") {
-                                        expand()
-                                    }
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.top, 8)
-                            Spacer()
-                            Divider()
-                        }
-                        .frame(maxHeight: .infinity)
-                        .background(Color(.systemGray5))
-                    } subTrackLane: {
-                        ForEach(track.subTracks) { track in
+            ScrollViewReader { proxy in
+                VStack {
+                    Button("Scroll") {
+                        proxy.scrollTo(20)
+                    }
+                    TrackEditor(30) {
+                        ForEach(data, id: \.id) { track in
                             TrackLane(track.regions) { region in
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(.green.opacity(0.7))
@@ -411,50 +425,82 @@ struct TrackEditor_Previews: PreviewProvider {
                                 .frame(maxHeight: .infinity)
                                 .background(Color(.systemGray5))
                             } subTrackLane: {
-                                ForEach(track.subTracks) { track in
-                                    TrackLane(track.regions) { region in
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(.green.opacity(0.7))
-                                            .padding(1)
-                                    } header: { expand in
-                                        VStack {
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(track.label)
-                                                        .bold()
-                                                    Button("ExpandAction") {
-                                                        expand()
-                                                    }
-                                                }
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, 14)
-                                            .padding(.top, 8)
-                                            Spacer()
-                                            Divider()
-                                        }
-                                        .frame(maxHeight: .infinity)
-                                        .background(Color(.systemGray5))
-                                    } subTrackLane: {
-                                        EmptyView()
-                                    }
+                                subTrack(track: track)
+                            }
+                        }
+                    } header: {
+                        Color(.systemGray6)
+                            .frame(height: 44)
+                    } ruler: { index in
+                        HStack {
+                            Text("\(index)")
+                                .padding(.horizontal, 12)
+                            Spacer()
+                            Divider()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .background(Color(.systemBackground))
+                        .tag(index)
+                    }
+                }
+            }
+        }
+
+        func subTrack(track: Track) -> some View{
+            ForEach(track.subTracks) { track in
+                TrackLane(track.regions) { region in
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.green.opacity(0.7))
+                        .padding(1)
+                } header: { expand in
+                    VStack {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(track.label)
+                                    .bold()
+                                Button("ExpandAction") {
+                                    expand()
                                 }
                             }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.top, 8)
+                        Spacer()
+                        Divider()
+                    }
+                    .frame(maxHeight: .infinity)
+                    .background(Color(.systemGray5))
+                } subTrackLane: {
+                    ForEach(track.subTracks) { track in
+                        TrackLane(track.regions) { region in
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.green.opacity(0.7))
+                                .padding(1)
+                        } header: { expand in
+                            VStack {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(track.label)
+                                            .bold()
+                                        Button("ExpandAction") {
+                                            expand()
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.top, 8)
+                                Spacer()
+                                Divider()
+                            }
+                            .frame(maxHeight: .infinity)
+                            .background(Color(.systemGray5))
+                        } subTrackLane: {
+                            EmptyView()
                         }
                     }
                 }
-            } header: {
-                Color(.systemGray6)
-                    .frame(height: 44)
-            } ruler: { index in
-                HStack {
-                    Text("\(index)")
-                        .padding(.horizontal, 12)
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemBackground))
             }
         }
     }
