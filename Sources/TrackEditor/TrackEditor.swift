@@ -40,19 +40,19 @@ public struct TrackEditorOptions {
     }
 }
 
+private struct TrackEditorLaneRangeKey: EnvironmentKey {
+    static let defaultValue: Range<Int> = 0..<100
+}
+
 private struct TrackEditorOptionsKey: EnvironmentKey {
     static let defaultValue: TrackEditorOptions = TrackEditorOptions()
 }
 
-private struct TrackEditorNumberOfBarsKey: EnvironmentKey {
-    static let defaultValue: Int = 100
-}
-
 extension EnvironmentValues {
 
-    var numberOfBars: Int {
-        get { self[TrackEditorNumberOfBarsKey.self] }
-        set { self[TrackEditorNumberOfBarsKey.self] = newValue }
+    var laneRange: Range<Int> {
+        get { self[TrackEditorLaneRangeKey.self] }
+        set { self[TrackEditorLaneRangeKey.self] = newValue }
     }
 
     var trackEditorOptions: TrackEditorOptions {
@@ -63,7 +63,7 @@ extension EnvironmentValues {
 
 public struct TrackEditor<Content, Header, Ruler> {
 
-    var numberOfBars: Int
+    var range: Range<Int>
 
     var options: TrackEditorOptions
 
@@ -78,13 +78,13 @@ public struct TrackEditor<Content, Header, Ruler> {
 extension TrackEditor: View where Content: View, Header: View, Ruler: View {
 
     public init(
-        _ numberOfBars: Int,
+        _ range: Range<Int>,
         options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler
     ) {
-        self.numberOfBars = numberOfBars
+        self.range = range
         self.options = options
         self.content = content
         self.header = header
@@ -106,12 +106,12 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 content()
-                    .environment(\.numberOfBars, numberOfBars)
+                    .environment(\.laneRange, range)
                     .environment(\.trackEditorOptions, options)
             } header: {
                 LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
-                        ForEach(0..<numberOfBars, id: \.self) { index in
+                        ForEach(range, id: \.self) { index in
                             ruler(index)
                                 .frame(width: options.barWidth)
                         }
@@ -128,11 +128,11 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
 extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyView {
 
     public init(
-        _ numberOfBars: Int,
+        _ range: Range<Int>,
         options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.numberOfBars = numberOfBars
+        self.range = range
         self.options = options
         self.content = content
         self.header = { EmptyView() }
@@ -154,7 +154,7 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 content()
-                    .environment(\.numberOfBars, numberOfBars)
+                    .environment(\.laneRange, range)
                     .environment(\.trackEditorOptions, options)
             }
         }
@@ -163,9 +163,9 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
 
 public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
-    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+    @Environment(\.laneRange) var laneRange: Range<Int>
 
-    @Environment(\.numberOfBars) var numberOfBars: Int
+    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
     @State var isSubTracksExpanded: Bool = false
 
@@ -176,6 +176,8 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
     var header: (ExpandAction) -> Header
 
     var subTrackLane: () -> SubTrackLane
+
+    var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 
 }
 
@@ -192,8 +194,6 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         self.header = header
         self.subTrackLane = subTrackLane
     }
-
-    var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(numberOfBars) }
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -220,7 +220,7 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
                     let index = data.firstIndex(of: region)!
                     let prevIndex = index - 1
                     let prevEnd = prevIndex < 0 ? 0 : data[prevIndex].end
-                    let leadingPadding = CGFloat(region.start - prevEnd) * options.barWidth
+                    let leadingPadding = CGFloat(region.start - prevEnd - laneRange.lowerBound) * options.barWidth
                     let width = CGFloat(region.end - region.start) * options.barWidth
                     content(region)
                         .frame(width: width)
@@ -244,7 +244,7 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
     func laneBackground() -> some View {
         LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
-                ForEach(0..<numberOfBars, id: \.self) { _ in
+                ForEach(laneRange, id: \.self) { _ in
                     Color(.systemGray4)
                         .padding(0.5)
                         .frame(width: options.barWidth)
@@ -269,8 +269,6 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
         self.header = header
         self.subTrackLane = { EmptyView() }
     }
-
-    var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(numberOfBars) }
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -428,7 +426,7 @@ struct TrackEditor_Previews: PreviewProvider {
                             proxy.scrollTo(20)
                         }
                     }
-                    TrackEditor(30) {
+                    TrackEditor(0..<30) {
                         ForEach(data, id: \.id) { track in
                             TrackLane(track.regions) { region in
                                 RoundedRectangle(cornerRadius: 12)
