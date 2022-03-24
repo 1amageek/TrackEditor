@@ -189,7 +189,7 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
-        self.data = data
+        self.data = data.sorted(by: { $0.end < $1.end })
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
@@ -219,8 +219,8 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
                 ForEach(data, id: \.self) { region in
                     let index = data.firstIndex(of: region)!
                     let prevIndex = index - 1
-                    let prevEnd = prevIndex < 0 ? 0 : data[prevIndex].end
-                    let leadingPadding = CGFloat(region.start - prevEnd - laneRange.lowerBound) * options.barWidth
+                    let prevEnd = prevIndex < 0 ? laneRange.lowerBound : data[prevIndex].end
+                    let leadingPadding = CGFloat(region.start - prevEnd) * options.barWidth
                     let width = CGFloat(region.end - region.start) * options.barWidth
                     content(region)
                         .frame(width: width)
@@ -332,6 +332,18 @@ struct TrackEditor_Previews: PreviewProvider {
         }
     }
 
+    public struct Cell: Hashable, LaneRegioning {
+
+        public var index: Int
+
+        public var start: Int {
+            return index
+        }
+        public var end: Int {
+            return index + 1
+        }
+    }
+
     static let data = [
         Track(id: "0", label: "Label0", regions: [
             Region(label: "0", start: 0, end: 3),
@@ -426,7 +438,7 @@ struct TrackEditor_Previews: PreviewProvider {
                             proxy.scrollTo(20)
                         }
                     }
-                    TrackEditor(0..<30) {
+                    TrackEditor(1..<30) {
                         ForEach(data, id: \.id) { track in
                             TrackLane(track.regions) { region in
                                 RoundedRectangle(cornerRadius: 12)
@@ -499,8 +511,13 @@ struct TrackEditor_Previews: PreviewProvider {
                     .frame(maxHeight: .infinity)
                     .background(Color(.systemGray5))
                 } subTrackLane: {
-                    ForEach(track.subTracks) { track in
-                        TrackLane(track.regions) { region in
+                    ForEach((track.subTracks)) { track in
+
+                        let cells = (3..<13).map({ index in
+                            Cell(index: index)
+                        })
+
+                        TrackLane(cells) { region in
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(.green.opacity(0.7))
                                 .padding(1)
