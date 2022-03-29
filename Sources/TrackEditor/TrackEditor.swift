@@ -8,8 +8,8 @@
 import SwiftUI
 
 public protocol LaneRegioning {
-    var start: Int { get }
-    var end: Int { get }
+    func startRegion(_ interval: Interval) -> Int
+    func endRegion(_ interval: Interval) -> Int
 }
 
 public struct ExpandAction {
@@ -25,15 +25,24 @@ public struct ExpandAction {
     }
 }
 
+public enum Interval {
+    case hour(Int)
+    case minute(Int)
+    case second(Int)
+}
+
 public struct TrackEditorOptions {
+    public var interval: Interval
     public var headerWidth: CGFloat
     public var trackHeight: CGFloat
     public var barWidth: CGFloat
     public init(
+        interval: Interval = .minute(15),
         headerWidth: CGFloat = 200,
         trackHeight: CGFloat = 80,
         barWidth: CGFloat = 100
     ) {
+        self.interval = interval
         self.headerWidth = headerWidth
         self.trackHeight = trackHeight
         self.barWidth = barWidth
@@ -178,7 +187,12 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
     var subTrackLane: () -> SubTrackLane
 
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
+}
 
+extension TrackLane where Data: Hashable & LaneRegioning {
+    var sortedData: Array<Data> {
+        data.sorted(by: { $0.endRegion(options.interval) < $1.endRegion(options.interval) })
+    }
 }
 
 extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane: View {
@@ -189,7 +203,7 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
-        self.data = data.sorted(by: { $0.end < $1.end })
+        self.data = data
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
@@ -214,14 +228,17 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
                 self.isSubTracksExpanded.toggle()
             }
         }
+        let sortedData = sortedData
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
-                ForEach(data, id: \.self) { region in
-                    let index = data.firstIndex(of: region)!
+                ForEach(sortedData, id: \.self) { region in
+                    let index = sortedData.firstIndex(of: region)!
                     let prevIndex = index - 1
-                    let prevEnd = prevIndex < 0 ? laneRange.lowerBound : data[prevIndex].end
-                    let leadingPadding = CGFloat(region.start - prevEnd) * options.barWidth
-                    let width = CGFloat(region.end - region.start) * options.barWidth
+                    let prevEnd = prevIndex < 0 ? laneRange.lowerBound : sortedData[prevIndex].endRegion(options.interval)
+                    let start = region.startRegion(options.interval)
+                    let end = region.endRegion(options.interval)
+                    let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
+                    let width = CGFloat(end - start) * options.barWidth
                     content(region)
                         .frame(width: width)
                         .padding(.leading, leadingPadding)
@@ -289,7 +306,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, 
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
-        self.data = data.sorted(by: { $0.end < $1.end })
+        self.data = data
         self.content = { _ in EmptyView() }
         self.header = header
         self.subTrackLane = subTrackLane
@@ -351,17 +368,26 @@ struct TrackEditor_Previews: PreviewProvider {
             self.start = start
             self.end = end
         }
+
+        func startRegion(_ interval: Interval) -> Int {
+            start
+        }
+
+        func endRegion(_ interval: Interval) -> Int {
+            end
+        }
     }
 
     public struct Cell: Hashable, LaneRegioning {
 
         public var index: Int
 
-        public var start: Int {
-            return index
+        func startRegion(_ interval: Interval) -> Int {
+            index
         }
-        public var end: Int {
-            return index + 1
+
+        func endRegion(_ interval: Interval) -> Int {
+            index + 1
         }
     }
 
