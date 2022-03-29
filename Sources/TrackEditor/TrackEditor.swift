@@ -282,6 +282,27 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
     }
 }
 
+extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header: View, SubTrackLane: View {
+
+    public init(
+        _ data: Array<Data>,
+        @ViewBuilder header: @escaping (ExpandAction) -> Header,
+        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+    ) {
+        self.data = data.sorted(by: { $0.end < $1.end })
+        self.content = { _ in EmptyView() }
+        self.header = header
+        self.subTrackLane = subTrackLane
+    }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            subTrackView()
+        }
+    }
+}
+
+
 struct TrackEditor_Previews: PreviewProvider {
 
     public struct Track: Identifiable, Hashable {
