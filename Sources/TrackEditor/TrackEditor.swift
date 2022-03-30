@@ -621,7 +621,7 @@ struct TrackEditor_Previews: PreviewProvider {
                                     Divider()
                                 }
                                 .frame(maxHeight: .infinity)
-                                .background(Color(.systemGray5))
+                                .background(Color.white)
                             } background: { index in
                                 HStack(spacing: 0) {
                                     Spacer()
@@ -632,7 +632,7 @@ struct TrackEditor_Previews: PreviewProvider {
                             }
                         }
                     } header: {
-                        Color(.systemGray6)
+                        Color.white
                             .frame(height: 44)
                     } ruler: { index in
                         HStack {
@@ -642,7 +642,7 @@ struct TrackEditor_Previews: PreviewProvider {
                             Divider()
                         }
                         .frame(maxWidth: .infinity)
-                        .background(Color(.systemBackground))
+                        .background(Color.white)
                         .tag(index)
                     }
                 }
@@ -673,7 +673,7 @@ struct TrackEditor_Previews: PreviewProvider {
                         Divider()
                     }
                     .frame(maxHeight: .infinity)
-                    .background(Color(.systemGray5))
+                    .background(Color.white)
                 } background: { index in
                     HStack(spacing: 0) {
                         Spacer()
@@ -708,7 +708,7 @@ struct TrackEditor_Previews: PreviewProvider {
                                 Divider()
                             }
                             .frame(maxHeight: .infinity)
-                            .background(Color(.systemGray5))
+                            .background(Color.white)
                         } subTrackLane: {
                             EmptyView()
                         }
