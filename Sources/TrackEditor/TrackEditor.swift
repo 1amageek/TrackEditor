@@ -325,6 +325,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
                     content(region)
                         .frame(width: width)
                         .padding(.leading, leadingPadding)
+                        .id(region)
                 }
             } header: {
                 header(expand)
