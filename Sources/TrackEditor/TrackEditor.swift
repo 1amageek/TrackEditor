@@ -26,6 +26,9 @@ public struct ExpandAction {
 }
 
 public enum Interval {
+    case year(Int)
+    case month(Int)
+    case day(Int)
     case hour(Int)
     case minute(Int)
     case second(Int)
