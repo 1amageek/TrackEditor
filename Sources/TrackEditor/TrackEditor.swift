@@ -110,6 +110,20 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 contentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+                    .background {
+                        LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                            Section {
+                                ForEach(range, id: \.self) { index in
+                                    HStack {
+                                        Spacer()
+                                        Divider()
+                                    }
+                                        .frame(width: options.barWidth)
+                                }
+                            }
+                        }
+                        .padding(.leading, options.headerWidth)
+                    }
             }
             .clipped()
         }
@@ -175,7 +189,7 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
     }
 }
 
-public struct TrackLane<Data, Content, Header, Background, SubTrackLane> {
+public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
@@ -191,8 +205,6 @@ public struct TrackLane<Data, Content, Header, Background, SubTrackLane> {
 
     var subTrackLane: () -> SubTrackLane
 
-    var backgroundCell: (Int) -> Background
-
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 }
 
@@ -202,30 +214,24 @@ extension TrackLane where Data: Hashable & LaneRegioning {
     }
 }
 
-extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, Background: View, SubTrackLane: View {
+extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane: View {
 
     public init(
         _ data: Array<Data>,
         @ViewBuilder content: @escaping (Data) -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder background: @escaping (Int) -> Background,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
         self.data = data
         self.content = content
         self.header = header
-        self.backgroundCell = background
         self.subTrackLane = subTrackLane
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            laneBackground()
+            trackLane()
                 .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .overlay {
-                    trackLane()
-                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                }
             subTrackView()
         }
     }
@@ -271,152 +277,30 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
             subTrackLane()
         }
     }
-
-    @ViewBuilder
-    func laneBackground() -> some View {
-        LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
-            Section {
-                ForEach(laneRange, id: \.self) { index in
-                    backgroundCell(index)
-                        .frame(width: options.barWidth)
-                }
-            } header: {
-                Spacer()
-                    .frame(width: options.headerWidth, height: options.trackHeight)
-            }
-        }
-    }
 }
 
-extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, Background == EmptyView, SubTrackLane: View {
+extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane == EmptyView {
 
     public init(
         _ data: Array<Data>,
         @ViewBuilder content: @escaping (Data) -> Content,
-        @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+        @ViewBuilder header: @escaping (ExpandAction) -> Header
     ) {
         self.data = data
         self.content = content
         self.header = header
-        self.backgroundCell = { _ in EmptyView() }
-        self.subTrackLane = subTrackLane
-    }
-
-    public var body: some View {
-        VStack(spacing: 0) {
-            laneBackground()
-                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .overlay {
-                    trackLane()
-                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                }
-            subTrackView()
-        }
-    }
-
-    @ViewBuilder
-    func trackLane() -> some View {
-        let expand: ExpandAction = ExpandAction {
-            withAnimation {
-                self.isSubTracksExpanded.toggle()
-            }
-        }
-        let sortedData = sortedData
-        LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
-            Section {
-                ForEach(sortedData, id: \.self) { region in
-                    let (width, padding) = regionPreference(data: sortedData, region: region)
-                    content(region)
-                        .frame(width: width)
-                        .padding(.leading, padding)
-                        .id(region)
-                }
-            } header: {
-                header(expand)
-                    .frame(width: options.headerWidth, height: options.trackHeight)
-            }
-        }
-    }
-
-    @ViewBuilder
-    func subTrackView() -> some View {
-        if isSubTracksExpanded {
-            subTrackLane()
-        }
-    }
-
-    @ViewBuilder
-    func laneBackground() -> some View {
-        LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
-            Section {
-                ForEach(laneRange, id: \.self) { index in
-                    backgroundCell(index)
-                        .frame(width: options.barWidth)
-                }
-            } header: {
-                Spacer()
-                    .frame(width: options.headerWidth, height: options.trackHeight)
-            }
-        }
-    }
-}
-
-extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, Background: View, SubTrackLane == EmptyView {
-
-    public init(
-        _ data: Array<Data>,
-        @ViewBuilder content: @escaping (Data) -> Content,
-        @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder background: @escaping (Int) -> Background
-    ) {
-        self.data = data
-        self.content = content
-        self.header = header
-        self.backgroundCell = background
         self.subTrackLane = { EmptyView() }
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            laneBackground()
+            trackLane()
                 .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .overlay {
-                    trackLane()
-                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                }
         }
     }
 }
 
-extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, Background == EmptyView, SubTrackLane == EmptyView {
-
-    public init(
-        _ data: Array<Data>,
-        @ViewBuilder content: @escaping (Data) -> Content,
-        @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder background: @escaping (Int) -> Background
-    ) {
-        self.data = data
-        self.content = content
-        self.header = header
-        self.backgroundCell = { _ in EmptyView() }
-        self.subTrackLane = { EmptyView() }
-    }
-
-    public var body: some View {
-        VStack(spacing: 0) {
-            laneBackground()
-                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .overlay {
-                    trackLane()
-                        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                }
-        }
-    }
-}
-
-extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header: View, Background == EmptyView, SubTrackLane: View {
+extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header: View, SubTrackLane: View {
 
     public init(
         _ data: Array<Data>,
@@ -426,7 +310,6 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, 
         self.data = data
         self.content = { _ in EmptyView() }
         self.header = header
-        self.backgroundCell = { _ in EmptyView() }
         self.subTrackLane = subTrackLane
     }
 
@@ -628,11 +511,6 @@ struct TrackEditor_Previews: PreviewProvider {
                                 }
                                 .frame(maxHeight: .infinity)
                                 .background(Color.white)
-                            } background: { index in
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    Divider()
-                                }
                             } subTrackLane: {
                                 subTrack(track: track)
                             }
@@ -680,11 +558,6 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     .frame(maxHeight: .infinity)
                     .background(Color.white)
-                } background: { index in
-                    HStack(spacing: 0) {
-                        Spacer()
-                        Divider()
-                    }
                 } subTrackLane: {
                     ForEach((track.subTracks)) { track in
 
