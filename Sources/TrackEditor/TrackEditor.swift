@@ -111,7 +111,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
                 contentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                     .background {
-                        LazyHStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                        LazyHStack(spacing: 0) {
                             Section {
                                 ForEach(range, id: \.self) { index in
                                     HStack {
@@ -122,7 +122,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
                                 }
                             }
                         }
-                        .padding(.leading, options.headerWidth)
                     }
             }
             .clipped()
