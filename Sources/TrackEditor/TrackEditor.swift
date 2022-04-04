@@ -115,8 +115,8 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
                             Section {
                                 ForEach(range, id: \.self) { index in
                                     HStack {
-                                        Spacer()
                                         Divider()
+                                        Spacer()
                                     }
                                         .frame(width: options.barWidth)
                                 }
