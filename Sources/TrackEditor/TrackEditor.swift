@@ -122,6 +122,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
                                 }
                             }
                         }
+                        .padding(.leading, options.headerWidth)
                     }
             }
             .clipped()
