@@ -8,8 +8,8 @@
 import SwiftUI
 
 public protocol LaneRegioning {
-    func startRegion(_ interval: Interval) -> Int
-    func endRegion(_ interval: Interval) -> Int
+    func startRegion(_ options: TrackEditorOptions) -> Int
+    func endRegion(_ options: TrackEditorOptions) -> Int
 }
 
 public struct ExpandAction {
@@ -35,16 +35,19 @@ public enum Interval {
 
 public struct TrackEditorOptions {
     public var interval: Interval
+    public var reference: DateComponents
     public var headerWidth: CGFloat
     public var trackHeight: CGFloat
     public var barWidth: CGFloat
     public init(
         interval: Interval = .minute(15),
+        reference: DateComponents = Calendar(identifier: .iso8601).dateComponents([.calendar, .timeZone, .year, .month, .day], from: Date()),
         headerWidth: CGFloat = 200,
         trackHeight: CGFloat = 80,
         barWidth: CGFloat = 100
     ) {
         self.interval = interval
+        self.reference = reference
         self.headerWidth = headerWidth
         self.trackHeight = trackHeight
         self.barWidth = barWidth
@@ -195,7 +198,7 @@ public struct TrackLane<Data, Content, Header, Background, SubTrackLane> {
 
 extension TrackLane where Data: Hashable & LaneRegioning {
     var sortedData: Array<Data> {
-        data.sorted(by: { $0.endRegion(options.interval) < $1.endRegion(options.interval) })
+        data.sorted(by: { $0.startRegion(options) < $1.startRegion(options) })
     }
 }
 
@@ -227,6 +230,17 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         }
     }
 
+    func regionPreference(data: [Data], region: Data) -> (width: CGFloat, padding: CGFloat) {
+        let index = data.firstIndex(of: region)!
+        let prevIndex = index - 1
+        let prevEnd = prevIndex < 0 ? laneRange.lowerBound : sortedData[prevIndex].endRegion(options)
+        let start = region.startRegion(options)
+        let end = region.endRegion(options)
+        let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
+        let width = CGFloat(end - start) * options.barWidth
+        return (width: width, padding: leadingPadding)
+    }
+
     @ViewBuilder
     func trackLane() -> some View {
         let expand: ExpandAction = ExpandAction {
@@ -238,16 +252,11 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 ForEach(sortedData, id: \.self) { region in
-                    let index = sortedData.firstIndex(of: region)!
-                    let prevIndex = index - 1
-                    let prevEnd = prevIndex < 0 ? laneRange.lowerBound : sortedData[prevIndex].endRegion(options.interval)
-                    let start = region.startRegion(options.interval)
-                    let end = region.endRegion(options.interval)
-                    let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
-                    let width = CGFloat(end - start) * options.barWidth
+                    let (width, padding) = regionPreference(data: sortedData, region: region)
                     content(region)
                         .frame(width: width)
-                        .padding(.leading, leadingPadding)
+                        .padding(.leading, padding)
+                        .id(region)
                 }
             } header: {
                 header(expand)
@@ -317,16 +326,10 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 ForEach(sortedData, id: \.self) { region in
-                    let index = sortedData.firstIndex(of: region)!
-                    let prevIndex = index - 1
-                    let prevEnd = prevIndex < 0 ? laneRange.lowerBound : sortedData[prevIndex].endRegion(options.interval)
-                    let start = region.startRegion(options.interval)
-                    let end = region.endRegion(options.interval)
-                    let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
-                    let width = CGFloat(end - start) * options.barWidth
+                    let (width, padding) = regionPreference(data: sortedData, region: region)
                     content(region)
                         .frame(width: width)
-                        .padding(.leading, leadingPadding)
+                        .padding(.leading, padding)
                         .id(region)
                 }
             } header: {
@@ -484,11 +487,11 @@ struct TrackEditor_Previews: PreviewProvider {
             self.end = end
         }
 
-        func startRegion(_ interval: Interval) -> Int {
+        func startRegion(_ options: TrackEditorOptions) -> Int {
             start
         }
 
-        func endRegion(_ interval: Interval) -> Int {
+        func endRegion(_ options: TrackEditorOptions) -> Int {
             end
         }
     }
@@ -497,11 +500,11 @@ struct TrackEditor_Previews: PreviewProvider {
 
         public var index: Int
 
-        func startRegion(_ interval: Interval) -> Int {
+        func startRegion(_ options: TrackEditorOptions) -> Int {
             index
         }
 
-        func endRegion(_ interval: Interval) -> Int {
+        func endRegion(_ options: TrackEditorOptions) -> Int {
             index + 1
         }
     }
