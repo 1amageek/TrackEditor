@@ -311,6 +311,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, 
         self.content = { _ in EmptyView() }
         self.header = header
         self.subTrackLane = subTrackLane
+        self._isSubTracksExpanded = State(initialValue: true)
     }
 
     public var body: some View {
