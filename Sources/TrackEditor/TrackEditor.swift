@@ -300,7 +300,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
     }
 }
 
-extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header: View, SubTrackLane: View {
+extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header == EmptyView, SubTrackLane: View {
 
     public init(
         _ data: Array<Data>,
@@ -309,14 +309,14 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, 
     ) {
         self.data = data
         self.content = { _ in EmptyView() }
-        self.header = header
+        self.header = { _ in EmptyView() }
         self.subTrackLane = subTrackLane
         self._isSubTracksExpanded = State(initialValue: true)
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            subTrackView()
+            subTrackLane()
         }
     }
 }
