@@ -303,7 +303,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
 extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header == EmptyView, SubTrackLane: View {
 
     public init(
-        _ data: Array<Data>
+        _ data: Array<Data>,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
         self.data = data
