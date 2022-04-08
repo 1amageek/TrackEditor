@@ -108,22 +108,22 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View {
     public var body: some View {
         GeometryReader { proxy in
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
-                contentView
-                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-                    .background {
-                        LazyHStack(spacing: 0) {
-                            Section {
-                                ForEach(range, id: \.self) { index in
-                                    HStack {
-                                        Divider()
-                                        Spacer()
-                                    }
-                                        .frame(width: options.barWidth)
+                ZStack {
+                    LazyHStack(spacing: 0) {
+                        Section {
+                            ForEach(range, id: \.self) { index in
+                                HStack {
+                                    Divider()
+                                    Spacer()
                                 }
+                                .frame(width: options.barWidth)
                             }
                         }
-                        .padding(.leading, options.headerWidth)
                     }
+                    .padding(.leading, options.headerWidth)
+                    contentView
+                }
+                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
             }
             .clipped()
         }
@@ -197,7 +197,7 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
     @State var isSubTracksExpanded: Bool = false
 
-    var data: Array<Data>
+    var data: [Data]
 
     var content: (Data) -> Content
 
@@ -205,11 +205,13 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
     var subTrackLane: () -> SubTrackLane
 
+    var isContentEmpty: Bool
+
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 }
 
 extension TrackLane where Data: Hashable & LaneRegioning {
-    var sortedData: Array<Data> {
+    var sortedData: [Data] {
         data.sorted(by: { $0.startRegion(options) < $1.startRegion(options) })
     }
 }
@@ -217,7 +219,7 @@ extension TrackLane where Data: Hashable & LaneRegioning {
 extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane: View {
 
     public init(
-        _ data: Array<Data>,
+        _ data: [Data],
         @ViewBuilder content: @escaping (Data) -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
@@ -226,12 +228,15 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
+        self.isContentEmpty = false
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            trackLane()
-                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+            if !isContentEmpty {
+                trackLane()
+                    .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+            }
             subTrackView()
         }
     }
@@ -282,7 +287,7 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
 extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane == EmptyView {
 
     public init(
-        _ data: Array<Data>,
+        _ data: [Data],
         @ViewBuilder content: @escaping (Data) -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header
     ) {
@@ -290,20 +295,14 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
         self.content = content
         self.header = header
         self.subTrackLane = { EmptyView() }
-    }
-
-    public var body: some View {
-        VStack(spacing: 0) {
-            trackLane()
-                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-        }
+        self.isContentEmpty = false
     }
 }
 
 extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header == EmptyView, SubTrackLane: View {
 
     public init(
-        _ data: Array<Data>,
+        _ data: [Data],
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
         self.data = data
@@ -311,12 +310,7 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, 
         self.header = { _ in EmptyView() }
         self.subTrackLane = subTrackLane
         self._isSubTracksExpanded = State(initialValue: true)
-    }
-
-    public var body: some View {
-        VStack(spacing: 0) {
-            subTrackLane()
-        }
+        self.isContentEmpty = true
     }
 }
 
@@ -488,32 +482,36 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     TrackEditor(1..<30) {
                         ForEach(data, id: \.id) { track in
-                            TrackLane(track.regions) { region in
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(.green.opacity(0.7))
-                                    .padding(1)
-                            } header: { expand in
-                                VStack {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(track.label)
-                                                .bold()
-                                            Button("ExpandAction") {
-                                                expand()
-                                            }
-                                        }
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.top, 8)
-                                    Spacer()
-                                    Divider()
-                                }
-                                .frame(maxHeight: .infinity)
-                                .background(Color.white)
-                            } subTrackLane: {
+                            TrackLane(track.regions,
+
+//                            ) { region in
+//                                RoundedRectangle(cornerRadius: 12)
+//                                    .fill(.green.opacity(0.7))
+//                                    .padding(1)
+//                            } header: { expand in
+//                                VStack {
+//                                    HStack {
+//                                        VStack(alignment: .leading, spacing: 4) {
+//                                            Text(track.label)
+//                                                .bold()
+//                                            Button("ExpandAction") {
+//                                                expand()
+//                                            }
+//                                        }
+//                                        Spacer()
+//                                    }
+//                                    .padding(.horizontal, 14)
+//                                    .padding(.top, 8)
+//                                    Spacer()
+//                                    Divider()
+//                                }
+//                                .frame(maxHeight: .infinity)
+//                                .background(Color.white)
+//                            }
+
+                        subTrackLane: {
                                 subTrack(track: track)
-                            }
+                            })
                         }
                     } header: {
                         Color.white
