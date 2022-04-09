@@ -358,36 +358,32 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     TrackEditor(1..<30) {
                         ForEach(data, id: \.id) { track in
-                            TrackLane(track.regions,
-
-//                            ) { region in
-//                                RoundedRectangle(cornerRadius: 12)
-//                                    .fill(.green.opacity(0.7))
-//                                    .padding(1)
-//                            } header: { expand in
-//                                VStack {
-//                                    HStack {
-//                                        VStack(alignment: .leading, spacing: 4) {
-//                                            Text(track.label)
-//                                                .bold()
-//                                            Button("ExpandAction") {
-//                                                expand()
-//                                            }
-//                                        }
-//                                        Spacer()
-//                                    }
-//                                    .padding(.horizontal, 14)
-//                                    .padding(.top, 8)
-//                                    Spacer()
-//                                    Divider()
-//                                }
-//                                .frame(maxHeight: .infinity)
-//                                .background(Color.white)
-//                            }
-
-                        subTrackLane: {
+                            TrackLane(track.regions) { region in
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(.green.opacity(0.7))
+                                    .padding(1)
+                            } header: { expand in
+                                VStack {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(track.label)
+                                                .bold()
+                                            Button("ExpandAction") {
+                                                expand()
+                                            }
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.top, 8)
+                                    Spacer()
+                                    Divider()
+                                }
+                                .frame(maxHeight: .infinity)
+                                .background(Color.white)
+                            } subTrackLane: {
                                 subTrack(track: track)
-                            })
+                            }
                         }
                     } header: {
                         Color.white

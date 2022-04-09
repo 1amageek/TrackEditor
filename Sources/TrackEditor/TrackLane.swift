@@ -23,8 +23,6 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
     var subTrackLane: () -> SubTrackLane
 
-    var isContentEmpty: Bool
-
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 }
 
@@ -46,15 +44,12 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
-        self.isContentEmpty = false
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            if !isContentEmpty {
-                trackLane()
-                    .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-            }
+            trackLane()
+                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
             subTrackView()
         }
     }
@@ -113,21 +108,5 @@ extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header:
         self.content = content
         self.header = header
         self.subTrackLane = { EmptyView() }
-        self.isContentEmpty = false
-    }
-}
-
-extension TrackLane where Data: Hashable & LaneRegioning, Content == EmptyView, Header == EmptyView, SubTrackLane: View {
-
-    public init(
-        _ data: [Data],
-        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
-    ) {
-        self.data = data
-        self.content = { _ in EmptyView() }
-        self.header = { _ in EmptyView() }
-        self.subTrackLane = subTrackLane
-        self._isSubTracksExpanded = State(initialValue: true)
-        self.isContentEmpty = true
     }
 }
