@@ -154,12 +154,12 @@ struct TrackGrid_Previews: PreviewProvider {
             self.end = end
         }
 
-        func startRegion(_ options: TrackEditorOptions) -> Int {
-            start
+        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(start)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> Int {
-            end
+        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(end)
         }
     }
 
@@ -167,12 +167,12 @@ struct TrackGrid_Previews: PreviewProvider {
 
         public var index: Int
 
-        func startRegion(_ options: TrackEditorOptions) -> Int {
-            index
+        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(index)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> Int {
-            index + 1
+        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(index + 1)
         }
     }
 

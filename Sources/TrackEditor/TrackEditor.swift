@@ -8,8 +8,8 @@
 import SwiftUI
 
 public protocol LaneRegioning {
-    func startRegion(_ options: TrackEditorOptions) -> Int
-    func endRegion(_ options: TrackEditorOptions) -> Int
+    func startRegion(_ options: TrackEditorOptions) -> CGFloat
+    func endRegion(_ options: TrackEditorOptions) -> CGFloat
 }
 
 public struct ExpandAction {
@@ -190,7 +190,6 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
 }
 
 
-
 struct TrackEditor_Previews: PreviewProvider {
 
     public struct Track: Identifiable, Hashable {
@@ -227,25 +226,25 @@ struct TrackEditor_Previews: PreviewProvider {
     public struct Region: Hashable, LaneRegioning {
 
         public var label: String
-        public var start: Int
-        public var end: Int
+        public var start: CGFloat
+        public var end: CGFloat
 
         public init(
             label: String,
-            start: Int,
-            end: Int
+            start: CGFloat,
+            end: CGFloat
         ) {
             self.label = label
             self.start = start
             self.end = end
         }
 
-        func startRegion(_ options: TrackEditorOptions) -> Int {
-            start
+        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(start)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> Int {
-            end
+        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(end)
         }
     }
 
@@ -253,18 +252,18 @@ struct TrackEditor_Previews: PreviewProvider {
 
         public var index: Int
 
-        func startRegion(_ options: TrackEditorOptions) -> Int {
-            index
+        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(index)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> Int {
-            index + 1
+        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+            CGFloat(index + 1)
         }
     }
 
     static let data = [
         Track(id: "0", label: "Label0", regions: [
-            Region(label: "0", start: 0, end: 3),
+            Region(label: "0", start: 0, end: 2.5),
             Region(label: "2", start: 4, end: 6),
             Region(label: "3", start: 7, end: 8),
             Region(label: "4", start: 8, end: 10),
