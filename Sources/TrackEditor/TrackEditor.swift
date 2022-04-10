@@ -7,11 +7,6 @@
 
 import SwiftUI
 
-public protocol LaneRegioning {
-    func startRegion(_ options: TrackEditorOptions) -> CGFloat
-    func endRegion(_ options: TrackEditorOptions) -> CGFloat
-}
-
 public struct ExpandAction {
 
     var action: () -> Void
@@ -239,11 +234,11 @@ struct TrackEditor_Previews: PreviewProvider {
             self.end = end
         }
 
-        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(start)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(end)
         }
     }
@@ -252,11 +247,11 @@ struct TrackEditor_Previews: PreviewProvider {
 
         public var index: Int
 
-        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(index)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(index + 1)
         }
     }

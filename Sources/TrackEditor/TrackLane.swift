@@ -28,7 +28,7 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
 extension TrackLane where Data: Hashable & LaneRegioning {
     var sortedData: [Data] {
-        data.sorted(by: { $0.startRegion(options) < $1.startRegion(options) })
+        data.sorted(by: { $0.startRegion(laneRange, options: options) < $1.startRegion(laneRange, options: options) })
     }
 }
 
@@ -57,9 +57,9 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
     func regionPreference(data: [Data], region: Data) -> (width: CGFloat, padding: CGFloat) {
         let index = data.firstIndex(of: region)!
         let prevIndex = index - 1
-        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(options)
-        let start = region.startRegion(options)
-        let end = region.endRegion(options)
+        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options:options)
+        let start = region.startRegion(laneRange, options:options)
+        let end = region.endRegion(laneRange, options:options)
         let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
         let width = CGFloat(end - start) * options.barWidth
         return (width: width, padding: leadingPadding)
@@ -147,24 +147,24 @@ struct TrackLane_Previews: PreviewProvider {
     public struct Region: Hashable, LaneRegioning {
 
         public var label: String
-        public var start: Int
-        public var end: Int
+        public var start: CGFloat
+        public var end: CGFloat
 
         public init(
             label: String,
-            start: Int,
-            end: Int
+            start: CGFloat,
+            end: CGFloat
         ) {
             self.label = label
             self.start = start
             self.end = end
         }
 
-        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(start)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(end)
         }
     }
@@ -173,11 +173,11 @@ struct TrackLane_Previews: PreviewProvider {
 
         public var index: Int
 
-        func startRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(index)
         }
 
-        func endRegion(_ options: TrackEditorOptions) -> CGFloat {
+        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
             CGFloat(index + 1)
         }
     }
