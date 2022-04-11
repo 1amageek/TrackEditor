@@ -125,6 +125,37 @@ extension Arrange: View where Data: Hashable & LaneRegioning, Content: View {
     }
 }
 
+public struct EqualParts<Content> {
+
+    @Environment(\.laneRange) var laneRange: Range<Int>
+
+    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+
+    var number: Int
+
+    var content: (Int) -> Content
+}
+
+extension EqualParts: View where Content: View {
+
+    public init(_ number: Int, @ViewBuilder content: @escaping (Int) -> Content) {
+        self.number = number
+        self.content = content
+
+    }
+
+    public var body: some View {
+        ForEach(0..<number, id: \.self) { index in
+            content(index)
+                .frame(width: width)
+        }
+    }
+
+    var width: CGFloat {
+        CGFloat(laneRange.upperBound - laneRange.lowerBound) * options.barWidth / CGFloat(number)
+    }
+}
+
 struct TrackLane_Previews: PreviewProvider {
 
 
@@ -168,6 +199,17 @@ struct TrackLane_Previews: PreviewProvider {
 
         TrackEditor(0..<100) {
             TrackLane {
+                EqualParts(600) { index in
+                    Color.green
+                        .padding(2)
+                }
+            } header: { _ in
+                Text("header")
+            }
+        }
+
+        TrackEditor(0..<100) {
+            TrackLane {
                 Arrange([
                     Region(label: "0", start: 0, end: 3),
                     Region(label: "2", start: 4, end: 6),
@@ -181,20 +223,6 @@ struct TrackLane_Previews: PreviewProvider {
                 Button {
                     expand()
                 } label: {
-                    Text("header")
-                }
-            } subTrackLane: {
-                TrackLane {
-                    Arrange([
-                        Region(label: "0", start: 0, end: 3),
-                        Region(label: "2", start: 4, end: 6),
-                        Region(label: "3", start: 7, end: 8),
-                        Region(label: "4", start: 8, end: 10),
-                        Region(label: "5", start: 86, end: 99)
-                    ]) { region in
-                        Color.green
-                    }
-                } header: { _ in
                     Text("header")
                 }
             }
