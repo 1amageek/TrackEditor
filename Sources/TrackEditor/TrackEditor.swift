@@ -353,10 +353,12 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     TrackEditor(1..<30) {
                         ForEach(data, id: \.id) { track in
-                            Placement(track.regions) { region in
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(.green.opacity(0.7))
-                                    .padding(1)
+                            TrackLane {
+                                Arrange(track.regions) { region in
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(.green.opacity(0.7))
+                                        .padding(1)
+                                }
                             } header: { expand in
                                 VStack {
                                     HStack {
@@ -376,8 +378,6 @@ struct TrackEditor_Previews: PreviewProvider {
                                 }
                                 .frame(maxHeight: .infinity)
                                 .background(Color.white)
-                            } subPlacement: {
-                                subTrack(track: track)
                             }
                         }
                     } header: {
@@ -393,69 +393,6 @@ struct TrackEditor_Previews: PreviewProvider {
                         .frame(maxWidth: .infinity)
                         .background(Color.white)
                         .tag(index)
-                    }
-                }
-            }
-        }
-
-        func subTrack(track: Track) -> some View{
-            ForEach(track.subTracks) { track in
-                Placement(track.regions) { region in
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.green.opacity(0.7))
-                        .padding(1)
-                } header: { expand in
-                    VStack {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(track.label)
-                                    .bold()
-                                Button("ExpandAction") {
-                                    expand()
-                                }
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.top, 8)
-                        Spacer()
-                        Divider()
-                    }
-                    .frame(maxHeight: .infinity)
-                    .background(Color.white)
-                } subPlacement: {
-                    ForEach((track.subTracks)) { track in
-
-                        let cells = (3..<13).map({ index in
-                            Cell(index: index)
-                        })
-
-                        Placement(cells) { region in
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.green.opacity(0.7))
-                                .padding(1)
-                        } header: { expand in
-                            VStack {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(track.label)
-                                            .bold()
-                                        Button("ExpandAction") {
-                                            expand()
-                                        }
-                                    }
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.top, 8)
-                                Spacer()
-                                Divider()
-                            }
-                            .frame(maxHeight: .infinity)
-                            .background(Color.white)
-                        } subPlacement: {
-                            EmptyView()
-                        }
                     }
                 }
             }
