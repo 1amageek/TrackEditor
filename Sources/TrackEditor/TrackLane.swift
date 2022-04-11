@@ -1,13 +1,13 @@
 //
-//  TrackLane.swift
+//  SwiftUIView.swift
 //  
 //
-//  Created by nori on 2022/04/08.
+//  Created by nori on 2022/04/11.
 //
 
 import SwiftUI
 
-public struct TrackLane<Data, Content, Header, SubTrackLane> {
+public struct TrackLane<Content, Header, SubTrackLane> {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
@@ -15,9 +15,7 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
 
     @State var isSubTracksExpanded: Bool = false
 
-    var data: [Data]
-
-    var content: (Data) -> Content
+    var content: () -> Content
 
     var header: (ExpandAction) -> Header
 
@@ -26,21 +24,13 @@ public struct TrackLane<Data, Content, Header, SubTrackLane> {
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 }
 
-extension TrackLane where Data: Hashable & LaneRegioning {
-    var sortedData: [Data] {
-        data.sorted(by: { $0.startRegion(laneRange, options: options) < $1.startRegion(laneRange, options: options) })
-    }
-}
-
-extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane: View {
+extension TrackLane: View where Content: View, Header: View, SubTrackLane: View {
 
     public init(
-        _ data: [Data],
-        @ViewBuilder content: @escaping (Data) -> Content,
+        @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
     ) {
-        self.data = data
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
@@ -54,17 +44,6 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
         }
     }
 
-    func regionPreference(data: [Data], region: Data) -> (width: CGFloat, padding: CGFloat) {
-        let index = data.firstIndex(of: region)!
-        let prevIndex = index - 1
-        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options:options)
-        let start = region.startRegion(laneRange, options:options)
-        let end = region.endRegion(laneRange, options:options)
-        let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
-        let width = CGFloat(end - start) * options.barWidth
-        return (width: width, padding: leadingPadding)
-    }
-
     @ViewBuilder
     func trackLane() -> some View {
         let expand: ExpandAction = ExpandAction {
@@ -72,16 +51,9 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
                 self.isSubTracksExpanded.toggle()
             }
         }
-        let sortedData = sortedData
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
-                ForEach(sortedData, id: \.self) { region in
-                    let (width, padding) = regionPreference(data: sortedData, region: region)
-                    content(region)
-                        .frame(width: width)
-                        .padding(.leading, padding)
-                        .id(region)
-                }
+                content()
             } header: {
                 header(expand)
                     .frame(width: options.headerWidth, height: options.trackHeight)
@@ -97,52 +69,64 @@ extension TrackLane: View where Data: Hashable & LaneRegioning, Content: View, H
     }
 }
 
-extension TrackLane where Data: Hashable & LaneRegioning, Content: View, Header: View, SubTrackLane == EmptyView {
+extension TrackLane where Content: View, Header: View, SubTrackLane == EmptyView {
 
     public init(
-        _ data: [Data],
-        @ViewBuilder content: @escaping (Data) -> Content,
+        @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header
     ) {
-        self.data = data
         self.content = content
         self.header = header
         self.subTrackLane = { EmptyView() }
     }
 }
 
-struct TrackLane_Previews: PreviewProvider {
+public struct Arrange<Data, Content> {
 
-    public struct Track: Identifiable, Hashable {
+    @Environment(\.laneRange) var laneRange: Range<Int>
 
-        public var id: String
+    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
-        public var parentID: String?
+    var data: [Data]
 
-        public var label: String
+    var content: (Data) -> Content
+}
 
-        public var regions: [Region]
+extension Arrange: View where Data: Hashable & LaneRegioning, Content: View {
 
-        public var subTracks: [Track]
+    public init(_ data: [Data], @ViewBuilder content: @escaping (Data) -> Content) {
+        self.data = data
+        self.content = content
+    }
 
-        public var isSubTracksExpandActioned: Bool
+    var sortedData: [Data] {
+        data.sorted(by: { $0.startRegion(laneRange, options: options) < $1.startRegion(laneRange, options: options) })
+    }
 
-        public init(
-            id: String,
-            parentID: String? = nil,
-            label: String,
-            regions: [Region],
-            subTracks: [Track] = [],
-            isSubTracksExpandActioned: Bool = false
-        ) {
-            self.id = id
-            self.parentID = parentID
-            self.label = label
-            self.regions = regions
-            self.subTracks = subTracks
-            self.isSubTracksExpandActioned = isSubTracksExpandActioned
+    public var body: some View {
+        ForEach(sortedData, id: \.self) { element in
+            let (width, padding) = position(data: sortedData, element: element)
+            content(element)
+                .frame(width: width)
+                .padding(.leading, padding)
+                .id(element)
         }
     }
+
+    func position(data: [Data], element: Data) -> (width: CGFloat, padding: CGFloat) {
+        let index = data.firstIndex(of: element)!
+        let prevIndex = index - 1
+        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options:options)
+        let start = element.startRegion(laneRange, options:options)
+        let end = element.endRegion(laneRange, options:options)
+        let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
+        let width = CGFloat(end - start) * options.barWidth
+        return (width: width, padding: leadingPadding)
+    }
+}
+
+struct TrackLane_Previews: PreviewProvider {
+
 
     public struct Region: Hashable, LaneRegioning {
 
@@ -169,207 +153,59 @@ struct TrackLane_Previews: PreviewProvider {
         }
     }
 
-    public struct Cell: Hashable, LaneRegioning {
-
-        public var index: Int
-
-        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
-            CGFloat(index)
-        }
-
-        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
-            CGFloat(index + 1)
-        }
-    }
-
-    static let data = [
-        Track(id: "0", label: "Label0", regions: [
-            Region(label: "0", start: 0, end: 3),
-            Region(label: "2", start: 4, end: 6),
-            Region(label: "3", start: 7, end: 8),
-            Region(label: "4", start: 8, end: 10),
-            Region(label: "5", start: 86, end: 100)
-        ], subTracks: [
-            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ], subTracks: [
-                Track(id: "1", parentID: "0", label: "Sub SubTack label 0", regions: [
-                    Region(label: "0", start: 0, end: 4),
-                    Region(label: "2", start: 4, end: 8),
-                    Region(label: "4", start: 8, end: 10)
-                ]),
-                Track(id: "3", parentID: "0", label: "Sub SubTack label 0", regions: [
-                    Region(label: "0", start: 0, end: 4),
-                    Region(label: "2", start: 4, end: 8),
-                    Region(label: "4", start: 8, end: 10)
-                ]),
-                Track(id: "4", parentID: "0", label: "Sub SubTack label 0", regions: [
-                    Region(label: "0", start: 0, end: 4),
-                    Region(label: "2", start: 4, end: 8),
-                    Region(label: "4", start: 8, end: 10)
-                ])
-            ]),
-            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ]),
-            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ])
-        ]),
-        Track(id: "1", label: "Label1", regions: [
-            Region(label: "0", start: 0, end: 4),
-            Region(label: "2", start: 4, end: 8),
-            Region(label: "4", start: 8, end: 10)
-        ], subTracks: [
-            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ]),
-            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ]),
-            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ])
-        ]),
-        Track(id: "2", label: "Label2", regions: [
-            Region(label: "0", start: 2, end: 3),
-            Region(label: "2", start: 4, end: 6),
-            Region(label: "3", start: 7, end: 10),
-            Region(label: "5", start: 10, end: 15)
-        ], subTracks: [
-            Track(id: "1", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ]),
-            Track(id: "3", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ]),
-            Track(id: "4", parentID: "0", label: "SubTack label 0", regions: [
-                Region(label: "0", start: 0, end: 4),
-                Region(label: "2", start: 4, end: 8),
-                Region(label: "4", start: 8, end: 10)
-            ])
-        ]),
-    ]
-
-    struct ContentView: View {
-        var body: some View {
-            TrackEditor(1..<30) {
-                VStack {
-                    ForEach(data, id: \.id) { track in
-                        TrackLane(track.regions) { region in
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.green.opacity(0.7))
-                                .padding(1)
-                        } header: { expand in
-                            VStack {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(track.label)
-                                            .bold()
-                                        Button("ExpandAction") {
-                                            expand()
-                                        }
-                                    }
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.top, 8)
-                                Spacer()
-                                Divider()
-                            }
-                            .frame(maxHeight: .infinity)
-                            .background(Color.white)
-                        }
-                    }
-                    ForEach(data, id: \.id) { track in
-                        TrackLane(track.regions) { region in
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.green.opacity(0.7))
-                                .padding(1)
-                        } header: { expand in
-                            VStack {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(track.label)
-                                            .bold()
-                                        Button("ExpandAction") {
-                                            expand()
-                                        }
-                                    }
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.top, 8)
-                                Spacer()
-                                Divider()
-                            }
-                            .frame(maxHeight: .infinity)
-                            .background(Color.white)
-                        } subTrackLane: {
-                            ForEach(data, id: \.id) { track in
-                                TrackLane(track.regions) { region in
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(.blue.opacity(0.7))
-                                        .padding(1)
-                                } header: { expand in
-                                    VStack {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(track.label)
-                                                    .bold()
-                                                Button("ExpandAction") {
-                                                    expand()
-                                                }
-                                            }
-                                            Spacer()
-                                        }
-                                        .padding(.horizontal, 14)
-                                        .padding(.top, 8)
-                                        Spacer()
-                                        Divider()
-                                    }
-                                    .frame(maxHeight: .infinity)
-                                    .background(Color.white)
-                                }
-                            }
-                        }
-                    }
-                }
-            } header: {
-                Color.white
-                    .frame(height: 44)
-            } ruler: { index in
+    static var previews: some View {
+        TrackEditor(0..<100) {
+            TrackLane {
                 HStack {
-                    Text("\(index)")
-                        .padding(.horizontal, 12)
-                    Spacer()
-                    Divider()
+                    ForEach(0..<10) { _ in
+                        Color.green
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .tag(index)
+            } header: { _ in
+                Text("header")
             }
         }
-    }
 
-    static var previews: some View {
-        ContentView()
-            .previewInterfaceOrientation(.landscapeLeft)
+        TrackEditor(0..<100) {
+            TrackLane {
+                Arrange([
+                    Region(label: "0", start: 0, end: 3),
+                    Region(label: "2", start: 4, end: 6),
+                    Region(label: "3", start: 7, end: 8),
+                    Region(label: "4", start: 8, end: 10),
+                    Region(label: "5", start: 86, end: 99)
+                ]) { region in
+                    Color.green
+                }
+            } header: { expand in
+                Button {
+                    expand()
+                } label: {
+                    Text("header")
+                }
+            } subTrackLane: {
+                TrackLane {
+                    Arrange([
+                        Region(label: "0", start: 0, end: 3),
+                        Region(label: "2", start: 4, end: 6),
+                        Region(label: "3", start: 7, end: 8),
+                        Region(label: "4", start: 8, end: 10),
+                        Region(label: "5", start: 86, end: 99)
+                    ]) { region in
+                        Color.green
+                    }
+                } header: { _ in
+                    Text("header")
+                }
+            }
+        } header: {
+            Color.white
+                .frame(height: 44)
+        } ruler: { index in
+            Color.white
+                .overlay {
+                    Text(index, format: .number)
+                }
+        }
     }
 }

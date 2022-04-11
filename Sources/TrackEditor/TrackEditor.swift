@@ -258,9 +258,10 @@ struct TrackEditor_Previews: PreviewProvider {
 
     static let data = [
         Track(id: "0", label: "Label0", regions: [
-            Region(label: "0", start: 0, end: 2.5),
-            Region(label: "2", start: 4, end: 6),
-            Region(label: "3", start: 7, end: 8),
+            Region(label: "0", start: 1, end: 1.1),
+            Region(label: "1", start: 1.1, end: 1.2),
+            Region(label: "2", start: 1.2, end: 1.3),
+            Region(label: "3", start: 1.3, end: 8),
             Region(label: "4", start: 8, end: 10),
             Region(label: "5", start: 86, end: 100)
         ], subTracks: [
@@ -352,7 +353,7 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     TrackEditor(1..<30) {
                         ForEach(data, id: \.id) { track in
-                            TrackLane(track.regions) { region in
+                            Placement(track.regions) { region in
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(.green.opacity(0.7))
                                     .padding(1)
@@ -375,7 +376,7 @@ struct TrackEditor_Previews: PreviewProvider {
                                 }
                                 .frame(maxHeight: .infinity)
                                 .background(Color.white)
-                            } subTrackLane: {
+                            } subPlacement: {
                                 subTrack(track: track)
                             }
                         }
@@ -399,7 +400,7 @@ struct TrackEditor_Previews: PreviewProvider {
 
         func subTrack(track: Track) -> some View{
             ForEach(track.subTracks) { track in
-                TrackLane(track.regions) { region in
+                Placement(track.regions) { region in
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.green.opacity(0.7))
                         .padding(1)
@@ -422,14 +423,14 @@ struct TrackEditor_Previews: PreviewProvider {
                     }
                     .frame(maxHeight: .infinity)
                     .background(Color.white)
-                } subTrackLane: {
+                } subPlacement: {
                     ForEach((track.subTracks)) { track in
 
                         let cells = (3..<13).map({ index in
                             Cell(index: index)
                         })
 
-                        TrackLane(cells) { region in
+                        Placement(cells) { region in
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(.green.opacity(0.7))
                                 .padding(1)
@@ -452,7 +453,7 @@ struct TrackEditor_Previews: PreviewProvider {
                             }
                             .frame(maxHeight: .infinity)
                             .background(Color.white)
-                        } subTrackLane: {
+                        } subPlacement: {
                             EmptyView()
                         }
                     }

@@ -42,7 +42,7 @@ extension TrackGrid: View where Content: View, Header: View, SubTrackGrid: View 
     public var body: some View {
         VStack(spacing: 0) {
             if !isContentEmpty {
-                trackLane()
+                Placement()
                     .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
             }
             subTrackView()
@@ -50,7 +50,7 @@ extension TrackGrid: View where Content: View, Header: View, SubTrackGrid: View 
     }
 
     @ViewBuilder
-    func trackLane() -> some View {
+    func Placement() -> some View {
         let expand: ExpandAction = ExpandAction {
             withAnimation {
                 self.isSubTracksExpanded.toggle()
