@@ -15,6 +15,8 @@ public struct TrackLane<Content, Header, SubTrackLane> {
 
     @State var isSubTracksExpanded: Bool = false
 
+    @GestureState var dragState = TrackEditorGestureState.inactive
+
     var content: () -> Content
 
     var header: (ExpandAction) -> Header
@@ -109,7 +111,6 @@ extension Arrange: View where Data: Hashable & LaneRegioning, Content: View {
             content(element)
                 .frame(width: width)
                 .padding(.leading, padding)
-                .id(element)
         }
     }
 
@@ -208,14 +209,12 @@ struct TrackLane_Previews: PreviewProvider {
             }
         }
 
-        TrackEditor(0..<100) {
+        TrackEditor(0..<10) {
             TrackLane {
                 Arrange([
-                    Region(label: "0", start: 0, end: 3),
-                    Region(label: "2", start: 4, end: 6),
-                    Region(label: "3", start: 7, end: 8),
-                    Region(label: "4", start: 8, end: 10),
-                    Region(label: "5", start: 86, end: 99)
+                    Region(label: "0", start: 0, end: 1),
+                    Region(label: "2", start: 2, end: 3),
+                    Region(label: "3", start: 4, end: 5),
                 ]) { region in
                     Color.green
                 }
