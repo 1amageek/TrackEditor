@@ -119,18 +119,18 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
             }
             .onEnded { value in
                 guard case .second(true, let drag?) = value else { return }
+                let _x: CGFloat = drag.startLocation.x + drag.translation.width
+                let _y: CGFloat = drag.startLocation.y + drag.translation.height
                 let midX: CGFloat = options.barWidth / 2
                 let midY: CGFloat = options.trackHeight / 2
                 let offsetX: CGFloat = midX + options.headerWidth
                 let offsetY: CGFloat = midY + options.rulerHeight
-                let rangeX: Range<CGFloat> = offsetX..<proxy.size.width - midX
-                let rangeY: Range<CGFloat> = offsetY..<proxy.size.height - midY
-                let _x: CGFloat = drag.startLocation.x + drag.translation.width - offsetX
-                let _y: CGFloat = drag.startLocation.y + drag.translation.height - offsetY
+                let rangeX: Range<CGFloat> = offsetX..<(proxy.size.width - midX)
+                let rangeY: Range<CGFloat> = offsetY..<(proxy.size.height - midY)
                 let x = max(min(rangeX.upperBound, _x), rangeX.lowerBound)
                 let y = max(min(rangeY.upperBound, _y), rangeY.lowerBound)
-                let trackID: Int = Int(round(y / options.trackHeight))
-                let _index: Int = Int(round(x / options.barWidth)) + range.lowerBound
+                let trackID = Int(round((y - offsetY) / options.trackHeight))
+                let _index = Int(round((x - offsetX) / options.barWidth)) + range.lowerBound
                 let index = min(max(_index, range.lowerBound), range.upperBound)
                 let position: CGPoint = position(trackID: trackID, index: index)
                 let period: Range<Int> = index..<(index + 1)
