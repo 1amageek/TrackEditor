@@ -7,19 +7,38 @@
 
 import Foundation
 import CoreGraphics
+import SwiftUI
 
 enum TrackEditorGestureState {
 
     case inactive
     case pressing
-    case dragging(translation: CGSize, startLocation: CGPoint)
+    case dragging(id: AnyHashable?, dragGesture: DragGesture.Value, frame: CGRect)
+
+    var id: AnyHashable? {
+        switch self {
+            case .inactive, .pressing:
+                return nil
+            case .dragging(let id, _, _):
+                return id
+        }
+    }
+
+    var frame: CGRect {
+        switch self {
+            case .inactive, .pressing:
+                return .zero
+            case .dragging(_, _, let frame):
+                return frame
+        }
+    }
 
     var translation: CGSize {
         switch self {
             case .inactive, .pressing:
                 return .zero
-            case .dragging(let translation, _):
-                return translation
+            case .dragging(_, let dragGesture, _):
+                return dragGesture.translation
         }
     }
 
@@ -27,8 +46,8 @@ enum TrackEditorGestureState {
         switch self {
             case .inactive, .pressing:
                 return .zero
-            case .dragging(_, let startLocation):
-                return startLocation
+            case .dragging(_, let dragGesture, _):
+                return dragGesture.startLocation
         }
     }
 
