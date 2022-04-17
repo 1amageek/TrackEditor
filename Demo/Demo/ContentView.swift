@@ -38,18 +38,21 @@ public struct Region: Identifiable, LaneRegioning {
 
 struct ContentView: View {
 
-    let regions: [Region] = [
+    @State var selection: EditingSelection?
+
+    @State var regions: [Region] = [
         Region(id: "0", label: "0", start: 0, end: 1),
         Region(id: "1", label: "1", start: 2, end: 3),
         Region(id: "2", label: "2", start: 4, end: 5)
     ]
 
-
     var body: some View {
-        TrackEditor(0..<20) {
+        TrackEditor(0..<20, selection: $selection) {
             TrackLane {
                 Arrange(regions) { region in
-                    Color.green
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.blue.opacity(0.7))
+                        .padding(1)
                 }
             } header: { expand in
                 VStack {
@@ -76,17 +79,21 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
             .background(.bar)
             .tag(index)
-        } placeholder: { track, regionPlaceholder in
+        } placeholder: { id in
             RoundedRectangle(cornerRadius: 12)
-                .fill(.blue.opacity(0.7))
+                .fill(.blue)
                 .padding(1)
-                .overlay {
-                    Text("\(track) \(regionPlaceholder.period.lowerBound)")
-                }
         }
-//        .onLongPressDragGesture { placeholder in
-//            self.placeholder = placeholder
-//        }
+        .onChange(of: selection) { newValue in
+            if let selection = newValue {
+                if case .focused = selection.state {
+                    if let index = self.regions.firstIndex(where: { $0.id == selection.id }) {
+                        self.regions[index].start = selection.period.lowerBound
+                        self.regions[index].end = selection.period.upperBound
+                    }
+                }
+            }
+        }
     }
 }
 
