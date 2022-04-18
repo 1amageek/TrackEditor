@@ -27,8 +27,6 @@ public struct TrackLane<Content, Header, SubTrackLane> {
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
-    @Environment(\.gestureState) var gestureState: GestureState<TrackEditorGestureState>
-
     @Environment(\.selection) var selection: Binding<EditingSelection?>
 
     @Namespace var trackLaneNamespace: Namespace.ID
@@ -66,6 +64,12 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
         }
     }
 
+    func period(for frame: CGRect) -> Range<CGFloat> {
+        let start = round((frame.minX - options.headerWidth) / options.barWidth)
+        let end = round((frame.maxX - options.headerWidth) / options.barWidth)
+        return start..<end
+    }
+
     @ViewBuilder
     func trackLane() -> some View {
         let expand: ExpandAction = ExpandAction {
@@ -82,14 +86,37 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
                     .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
-//        .overlayPreferenceValue(RegionPreferenceKey.self) { value in
-//            GeometryReader { geometory in
-//                Color.clear
-//                    .contentShape(Rectangle())
-////                    .onTapGesture { }
-////                    .gesture(dragGesture(value, geometory: geometory))
-//            }
-//        }
+        .frame(width: options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth, alignment: .leading)
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if self.selection.wrappedValue != nil {
+                            self.selection.wrappedValue = nil
+                        }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                            .onChanged { value in
+                                let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
+                                let position = CGPoint(x: frame.midX, y: frame.midY)
+                                let period = period(for: frame)
+                                self.selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .dragging)
+                            }
+                            .onEnded { value in
+                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
+                                frame.origin.x = round((frame.minX - options.headerWidth) / options.barWidth) * options.barWidth + options.headerWidth
+                                frame.origin.y = round((frame.minY - options.rulerHeight) / options.trackHeight) * options.trackHeight + options.rulerHeight
+                                let position = CGPoint(x: frame.midX, y: frame.midY)
+                                let period = period(for: frame)
+                                withAnimation(.spring()) {
+                                    selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .focused)
+                                }
+                            }
+                    )
+            }
+        }
     }
 
     @ViewBuilder
@@ -161,6 +188,7 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
                                 LongPressGesture(minimumDuration: 0.3)
                                     .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
                                     .onChanged { value in
+                                        print(value)
                                         switch value {
                                             case .first(true): break
                                             case .second(true, let drag):
@@ -184,7 +212,7 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
                                         frame.origin.y = round((frame.minY - options.rulerHeight) / options.trackHeight) * options.trackHeight + options.rulerHeight
                                         let position = CGPoint(x: frame.midX, y: frame.midY)
                                         let period = period(for: frame)
-                                        withAnimation(.interactiveSpring()) {
+                                        withAnimation(.spring()) {
                                             selection.wrappedValue = EditingSelection(id: id, position: position, size: size, period: period, state: .focused)
                                         }
                                     }

@@ -23,6 +23,8 @@ struct RegionLongPressDragGesture: Gesture {
 
     var size: CGSize { frame.size }
 
+    var isDragging: Bool = false
+
     func period(for frame: CGRect) -> Range<CGFloat> {
         let start = round((frame.minX - options.headerWidth) / options.barWidth)
         let end = round((frame.maxX - options.headerWidth) / options.barWidth)

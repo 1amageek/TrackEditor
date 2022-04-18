@@ -64,10 +64,6 @@ private struct TrackEditorNamespaceKey: EnvironmentKey {
     static let defaultValue: Namespace = .init()
 }
 
-private struct TrackEditorGestureKey: EnvironmentKey {
-    static let defaultValue: GestureState<TrackEditorGestureState> = GestureState(initialValue: .inactive)
-}
-
 private struct TrackEditorEditingKey: EnvironmentKey {
     static let defaultValue: Binding<EditingSelection?> = .constant(nil)
 }
@@ -87,11 +83,6 @@ extension EnvironmentValues {
     var trackEditorNamespace: Namespace {
         get { self[TrackEditorNamespaceKey.self] }
         set { self[TrackEditorNamespaceKey.self] = newValue }
-    }
-
-    var gestureState: GestureState<TrackEditorGestureState> {
-        get { self[TrackEditorGestureKey.self] }
-        set { self[TrackEditorGestureKey.self] = newValue }
     }
 
     var selection: Binding<EditingSelection?> {
@@ -117,6 +108,8 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
     var ruler: (Int) -> Ruler
 
     var placeholder: (String?) -> Placeholder
+
+    @State var scale: CGFloat = 0.3
 }
 
 extension TrackEditor: View where Content: View, Header: View, Ruler: View, Placeholder: View {
@@ -166,7 +159,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     @ViewBuilder
     var placeholder: some View {
         if let selection = selection {
-            placeholder(selection.id)
+            Region {
+                placeholder(selection.id)
+            }
                 .frame(width: selection.size.width, height: selection.size.height)
                 .overlay {
                     RegionDragGestureOverlay(id: selection.id)
@@ -190,12 +185,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                             }
                         }
                     }
-                    .contentShape(Rectangle())
                     .padding(.leading, options.headerWidth)
-
                     contentView
                         .frame(width: contentSize.width)
-                        .contentShape(Rectangle())
                         .overlay {
                             placeholder
                                 .coordinateSpace(name: namespace)
