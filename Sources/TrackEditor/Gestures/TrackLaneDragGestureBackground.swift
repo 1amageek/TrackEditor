@@ -23,6 +23,8 @@ struct TrackLaneDragGestureBackground: View {
         return start..<end
     }
 
+    var tag: AnyHashable
+
     var body: some View {
         GeometryReader { proxy in
             Color.clear
@@ -39,7 +41,7 @@ struct TrackLaneDragGestureBackground: View {
                                 let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
                                 let position = CGPoint(x: frame.midX, y: frame.midY)
                                 let period = period(for: frame)
-                                self.selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .dragging)
+                                self.selection.wrappedValue = EditingSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .dragging)
                             }
                         }
                         .onEnded { value in
@@ -50,7 +52,7 @@ struct TrackLaneDragGestureBackground: View {
                                 let position = CGPoint(x: frame.midX, y: frame.midY)
                                 let period = period(for: frame)
                                 withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
-                                    selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .focused)
+                                    selection.wrappedValue = EditingSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .focused)
                                 }
                             } else {
                                 selection.wrappedValue = nil

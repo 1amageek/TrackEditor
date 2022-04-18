@@ -16,6 +16,7 @@ public enum EditingGestureState: Hashable {
 
 public struct EditingSelection: Hashable {
     public var id: String?
+    public var tag: AnyHashable
     public var position: CGPoint
     public var size: CGSize
     public var period: Range<CGFloat>
@@ -23,6 +24,7 @@ public struct EditingSelection: Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(tag)
         hasher.combine(position.x)
         hasher.combine(position.y)
         hasher.combine(size.width)

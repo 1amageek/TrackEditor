@@ -11,11 +11,20 @@ private struct TrackLaneNamespaceKey: EnvironmentKey {
     static let defaultValue: Namespace = .init()
 }
 
+private struct TrackLaneTagKey: EnvironmentKey {
+    static let defaultValue: AnyHashable = UUID().uuidString
+}
+
 extension EnvironmentValues {
 
     var trackLaneNamespace: Namespace {
         get { self[TrackLaneNamespaceKey.self] }
         set { self[TrackLaneNamespaceKey.self] = newValue }
+    }
+
+    var trackLaneTag: AnyHashable {
+        get { self[TrackLaneTagKey.self] }
+        set { self[TrackLaneTagKey.self] = newValue }
     }
 }
 
@@ -32,6 +41,8 @@ public struct TrackLane<Content, Header, SubTrackLane> {
     @Namespace var trackLaneNamespace: Namespace.ID
 
     @State var isSubTracksExpanded: Bool = false
+
+    var _tag: AnyHashable = UUID().uuidString
 
     var content: () -> Content
 
@@ -53,6 +64,22 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
         self.content = content
         self.header = header
         self.subTrackLane = subTrackLane
+    }
+
+    init<V>(
+        _ tag: V,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder header: @escaping (ExpandAction) -> Header,
+        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+    ) where V : Hashable {
+        self._tag = tag
+        self.content = content
+        self.header = header
+        self.subTrackLane = subTrackLane
+    }
+
+    public func tag<V>(_ tag: V) -> some View where V : Hashable {
+        TrackLane(tag, content: content, header: header, subTrackLane: subTrackLane)
     }
 
     public var body: some View {
@@ -81,13 +108,14 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
             Section {
                 content()
                     .environment(\.trackLaneNamespace, _trackLaneNamespace)
+                    .environment(\.trackLaneTag, _tag)
             } header: {
                 header(expand)
                     .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
         .frame(width: options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth, alignment: .leading)
-        .background(TrackLaneDragGestureBackground())
+        .background(TrackLaneDragGestureBackground(tag: _tag))
     }
 
     @ViewBuilder
@@ -120,6 +148,8 @@ public struct Arrange<Data, Content> {
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
+    @Environment(\.trackLaneTag) var trackLaneTag: AnyHashable
+
     var data: [Data]
 
     var content: (Data) -> Content
@@ -149,7 +179,7 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
             content(element)
                 .frame(width: width)
                 .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, bounds: $0)] })
-                .overlay(RegionLongPressDragGestureOverlay(id: id))
+                .overlay(RegionLongPressDragGestureOverlay(id: id, tag: trackLaneTag))
                 .padding(.leading, padding)
         }
     }
@@ -244,6 +274,7 @@ struct TrackLane_Previews: PreviewProvider {
                     .frame(maxHeight: .infinity)
                     .background(Color.white)
                 }
+                .tag("w")
             } header: {
                 HStack {
                     Spacer()
@@ -261,13 +292,6 @@ struct TrackLane_Previews: PreviewProvider {
                 .frame(maxWidth: .infinity)
                 .background(.bar)
                 .tag(index)
-            } placeholder: { id in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.blue.opacity(0.7))
-                    .padding(1)
-                    .overlay {
-                        Text("\(id ?? "")")
-                    }
             }
         }
     }

@@ -107,9 +107,7 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
     var ruler: (Int) -> Ruler
 
-    var placeholder: (String?) -> Placeholder
-
-    @State var scale: CGFloat = 0.3
+    var placeholder: (EditingSelection) -> Placeholder
 }
 
 extension TrackEditor: View where Content: View, Header: View, Ruler: View, Placeholder: View {
@@ -121,7 +119,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
-        @ViewBuilder placeholder: @escaping (String?) -> Placeholder
+        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = selection
@@ -138,7 +136,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
-        @ViewBuilder placeholder: @escaping (String?) -> Placeholder
+        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = .constant(nil)
@@ -148,7 +146,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.ruler = ruler
         self.placeholder = placeholder
     }
-
 
     var contentSize: CGSize {
         let width: CGFloat = options.barWidth * CGFloat(range.upperBound - range.lowerBound) + options.headerWidth
@@ -160,10 +157,10 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     var placeholder: some View {
         if let selection = selection {
             Region(animation: selection.id == nil) {
-                placeholder(selection.id)
+                placeholder(selection)
             }
             .frame(width: selection.size.width, height: selection.size.height)
-            .overlay(RegionDragGestureOverlay(id: selection.id))
+            .overlay(RegionDragGestureOverlay(id: selection.id, tag: selection.tag))
             .position(x: selection.position.x, y: selection.position.y)
         }
     }
@@ -320,7 +317,7 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
         _ range: Range<Int>,
         options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder placeholder: @escaping (String?) -> Placeholder
+        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = .constant(nil)
@@ -499,12 +496,12 @@ struct TrackEditor_Previews: PreviewProvider {
                 .frame(maxWidth: .infinity)
                 .background(.bar)
                 .tag(index)
-            } placeholder: { id in
+            } placeholder: { editingSelection in
                 RoundedRectangle(cornerRadius: 12)
                     .fill(.blue.opacity(0.7))
                     .padding(1)
                     .overlay {
-                        Text("\(id ?? "")")
+                        Text("\(editingSelection.id ?? "")")
                     }
             }
         }
