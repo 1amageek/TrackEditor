@@ -292,6 +292,10 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 headerlessContentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+                    .overlay {
+                        placeholder
+                    }
+                    .coordinateSpace(name: namespace)
             }
             .clipped()
         }
@@ -306,7 +310,25 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
                     .environment(\.trackEditorOptions, options)
             }
         }
-        .coordinateSpace(name: namespace)
+
+    }
+}
+
+extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyView, Placeholder: View {
+
+    public init(
+        _ range: Range<Int>,
+        options: TrackEditorOptions = TrackEditorOptions(),
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder placeholder: @escaping (String?) -> Placeholder
+    ) {
+        self.range = range
+        self._selection = .constant(nil)
+        self.options = options
+        self.content = content
+        self.header = { EmptyView() }
+        self.ruler = { _ in EmptyView() }
+        self.placeholder = placeholder
     }
 }
 
