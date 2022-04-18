@@ -35,7 +35,6 @@ struct RegionLongPressDragGestureOverlay: View {
                     LongPressGesture(minimumDuration: 0.3)
                         .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
                         .onChanged { value in
-                            print(value)
                             switch value {
                                 case .first(true): break
                                 case .second(true, let drag):

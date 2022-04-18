@@ -159,7 +159,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     @ViewBuilder
     var placeholder: some View {
         if let selection = selection {
-            Region {
+            Region(animation: selection.id == nil) {
                 placeholder(selection.id)
             }
             .frame(width: selection.size.width, height: selection.size.height)
@@ -188,7 +188,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                         .frame(width: contentSize.width)
                         .overlay {
                             placeholder
-                                .coordinateSpace(name: namespace)
                         }
                         .coordinateSpace(name: namespace)
                 }
@@ -225,92 +224,91 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     }
 }
 
-//extension TrackEditor where Content: View, Header: View, Ruler: View, Placeholder == EmptyView {
-//
-//    public init(
-//        _ range: Range<Int>,
-//        options: TrackEditorOptions = TrackEditorOptions(),
-//        @ViewBuilder content: @escaping () -> Content,
-//        @ViewBuilder header: @escaping () -> Header,
-//        @ViewBuilder ruler: @escaping (Int) -> Ruler
-//    ) {
-//        self.range = range
-//        self.options = options
-//        self.content = content
-//        self.header = header
-//        self.ruler = ruler
-//        self.placeholder = { _, _ in EmptyView() }
-//    }
-//
-//    public var body: some View {
-//        GeometryReader { proxy in
-//            ScrollView([.vertical, .horizontal], showsIndicators: true) {
-//                ZStack(alignment: .topLeading) {
-//                    LazyHStack(spacing: 0) {
-//                        Section {
-//                            ForEach(range, id: \.self) { index in
-//                                HStack(spacing: 0) {
-//                                    Divider()
-//                                    Spacer()
-//                                }
-//                                .frame(width: options.barWidth)
-//                            }
-//                        }
-//                    }
-//                    .contentShape(Rectangle())
-//                    .padding(.leading, options.headerWidth)
-//
-//                    GeometryReader { contentGeometory in
-//                        contentView
-//                            .frame(width: contentSize.width)
-//                            .contentShape(Rectangle())
-////                            .onTapGesture {}
-////                            .gesture(longPressDrag(proxy: contentGeometory))
-//                    }
-//                }
-//                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-//            }
-//            .clipped()
-//        }
-//    }
-//}
-//
-//extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyView, Placeholder == EmptyView {
-//
-//    public init(
-//        _ range: Range<Int>,
-//        options: TrackEditorOptions = TrackEditorOptions(),
-//        @ViewBuilder content: @escaping () -> Content
-//    ) {
-//        self.range = range
-//        self.options = options
-//        self.content = content
-//        self.header = { EmptyView() }
-//        self.ruler = { _ in EmptyView() }
-//        self.placeholder = { _, _ in EmptyView() }
-//    }
-//
-//    public var body: some View {
-//        GeometryReader { proxy in
-//            ScrollView([.vertical, .horizontal], showsIndicators: true) {
-//                headerlessContentView
-//                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-//            }
-//            .clipped()
-//        }
-//    }
-//
-//    @ViewBuilder
-//    private var headerlessContentView: some View {
-//        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
-//            Section {
-//                content()
-//                    .environment(\.laneRange, range)
-//                    .environment(\.trackEditorOptions, options)
-//            }
-//        }
-//    }
-//}
+extension TrackEditor where Content: View, Header: View, Ruler: View, Placeholder == EmptyView {
+
+    public init(
+        _ range: Range<Int>,
+        options: TrackEditorOptions = TrackEditorOptions(),
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder header: @escaping () -> Header,
+        @ViewBuilder ruler: @escaping (Int) -> Ruler
+    ) {
+        self.range = range
+        self._selection = .constant(nil)
+        self.options = options
+        self.content = content
+        self.header = header
+        self.ruler = ruler
+        self.placeholder = { _ in EmptyView() }
+    }
+
+    public var body: some View {
+        GeometryReader { proxy in
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                ZStack(alignment: .topLeading) {
+                    LazyHStack(spacing: 0) {
+                        Section {
+                            ForEach(range, id: \.self) { index in
+                                HStack(spacing: 0) {
+                                    Divider()
+                                    Spacer()
+                                }
+                                .frame(width: options.barWidth)
+                            }
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .padding(.leading, options.headerWidth)
+
+                    contentView
+                        .frame(width: contentSize.width)
+                        .coordinateSpace(name: namespace)
+                }
+                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+            }
+            .clipped()
+        }
+    }
+}
+
+extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyView, Placeholder == EmptyView {
+
+    public init(
+        _ range: Range<Int>,
+        options: TrackEditorOptions = TrackEditorOptions(),
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.range = range
+        self._selection = .constant(nil)
+        self.options = options
+        self.content = content
+        self.header = { EmptyView() }
+        self.ruler = { _ in EmptyView() }
+        self.placeholder = { _ in EmptyView() }
+    }
+
+    public var body: some View {
+        GeometryReader { proxy in
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                headerlessContentView
+                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+            }
+            .clipped()
+        }
+    }
+
+    @ViewBuilder
+    private var headerlessContentView: some View {
+        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
+            Section {
+                content()
+                    .environment(\.laneRange, range)
+                    .environment(\.trackEditorOptions, options)
+            }
+        }
+        .coordinateSpace(name: namespace)
+    }
+}
 
 
 struct TrackEditor_Previews: PreviewProvider {
