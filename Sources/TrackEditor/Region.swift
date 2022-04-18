@@ -21,7 +21,7 @@ struct Region<Content>: View where Content: View {
         content()
             .scaleEffect(scale)
             .onAppear {
-                scale = 0.7
+                scale = 0.78
                 withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.3, blendDuration: 0)) {
                     scale = 1
                 }

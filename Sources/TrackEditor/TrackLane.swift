@@ -87,36 +87,7 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
             }
         }
         .frame(width: options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth, alignment: .leading)
-        .background {
-            GeometryReader { proxy in
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if self.selection.wrappedValue != nil {
-                            self.selection.wrappedValue = nil
-                        }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                            .onChanged { value in
-                                let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
-                                let position = CGPoint(x: frame.midX, y: frame.midY)
-                                let period = period(for: frame)
-                                self.selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .dragging)
-                            }
-                            .onEnded { value in
-                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
-                                frame.origin.x = round((frame.minX - options.headerWidth) / options.barWidth) * options.barWidth + options.headerWidth
-                                frame.origin.y = round((frame.minY - options.rulerHeight) / options.trackHeight) * options.trackHeight + options.rulerHeight
-                                let position = CGPoint(x: frame.midX, y: frame.midY)
-                                let period = period(for: frame)
-                                withAnimation(.spring()) {
-                                    selection.wrappedValue = EditingSelection(id: nil, position: position, size: frame.size, period: period, state: .focused)
-                                }
-                            }
-                    )
-            }
-        }
+        .background(TrackLaneDragGestureBackground())
     }
 
     @ViewBuilder
@@ -173,52 +144,12 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
 
     public var body: some View {
         ForEach(sortedData, id: \.id) { element in
+            let id = "\(element.id)"
             let (width, padding) = position(data: sortedData, element: element)
             content(element)
                 .frame(width: width)
                 .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, bounds: $0)] })
-                .overlay {
-                    GeometryReader { proxy in
-                        let id = "\(element.id)"
-                        let frame = proxy.frame(in: .named(namespace.wrappedValue))
-                        let size = proxy.size
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .gesture(
-                                LongPressGesture(minimumDuration: 0.3)
-                                    .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
-                                    .onChanged { value in
-                                        print(value)
-                                        switch value {
-                                            case .first(true): break
-                                            case .second(true, let drag):
-                                                if let drag = drag {
-                                                    let frame = frame.offsetBy(dx: drag.translation.width, dy: drag.translation.height)
-                                                    let position = CGPoint(x: frame.midX, y: frame.midY)
-                                                    let period = period(for: frame)
-                                                    selection.wrappedValue = EditingSelection(id: id, position: position, size: size, period: period, state: .dragging)
-                                                } else {
-                                                    let position = CGPoint(x: frame.midX, y: frame.midY)
-                                                    let period = period(for: frame)
-                                                    selection.wrappedValue = EditingSelection(id: id, position: position, size: size, period: period, state: .pressing)
-                                                }
-                                            default: break
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        guard case .second(true, let drag?) = value else { return }
-                                        var frame = frame.offsetBy(dx: drag.predictedEndTranslation.width, dy: drag.predictedEndTranslation.height)
-                                        frame.origin.x = round((frame.minX - options.headerWidth) / options.barWidth) * options.barWidth + options.headerWidth
-                                        frame.origin.y = round((frame.minY - options.rulerHeight) / options.trackHeight) * options.trackHeight + options.rulerHeight
-                                        let position = CGPoint(x: frame.midX, y: frame.midY)
-                                        let period = period(for: frame)
-                                        withAnimation(.spring()) {
-                                            selection.wrappedValue = EditingSelection(id: id, position: position, size: size, period: period, state: .focused)
-                                        }
-                                    }
-                            )
-                    }
-                }
+                .overlay(RegionLongPressDragGestureOverlay(id: id))
                 .padding(.leading, padding)
         }
     }
@@ -293,8 +224,6 @@ struct TrackLane_Previews: PreviewProvider {
 
     struct ContentView: View {
 
-        @State var placeholder: RegionPlaceholder?
-
         let regions: [Region] = [
             Region(id: "0", label: "0", start: 0, end: 1),
             Region(id: "1", label: "1", start: 2, end: 3),
@@ -340,15 +269,6 @@ struct TrackLane_Previews: PreviewProvider {
                         Text("\(id ?? "")")
                     }
             }
-            .sheet(item: $placeholder, content: { placeholder in
-                VStack {
-                    Button {
-                        placeholder.hide()
-                    } label: {
-                        Text("HIDE")
-                    }
-                }
-            })
         }
     }
 

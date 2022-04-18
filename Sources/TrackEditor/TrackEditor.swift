@@ -162,11 +162,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
             Region {
                 placeholder(selection.id)
             }
-                .frame(width: selection.size.width, height: selection.size.height)
-                .overlay {
-                    RegionDragGestureOverlay(id: selection.id)
-                }
-                .position(x: selection.position.x, y: selection.position.y)
+            .frame(width: selection.size.width, height: selection.size.height)
+            .overlay(RegionDragGestureOverlay(id: selection.id))
+            .position(x: selection.position.x, y: selection.position.y)
         }
     }
 
@@ -435,10 +433,10 @@ struct TrackEditor_Previews: PreviewProvider {
 
     struct ContentView: View {
 
-        @State var placeholder: RegionPlaceholder?
+        @State var selection: EditingSelection?
 
         var body: some View {
-            TrackEditor(0..<20) {
+            TrackEditor(0..<20, selection: $selection) {
                 ForEach(data, id: \.id) { track in
                     TrackLane {
                         Arrange(track.regions) { region in
@@ -489,15 +487,6 @@ struct TrackEditor_Previews: PreviewProvider {
                         Text("\(id ?? "")")
                     }
             }
-            .sheet(item: $placeholder, content: { placeholder in
-                VStack {
-                    Button {
-                        placeholder.hide()
-                    } label: {
-                        Text("HIDE")
-                    }
-                }
-            })
         }
     }
 
