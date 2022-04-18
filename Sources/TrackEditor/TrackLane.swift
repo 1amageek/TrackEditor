@@ -149,7 +149,11 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
             content(element)
                 .frame(width: width)
                 .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, bounds: $0)] })
-                .overlay(RegionLongPressDragGestureOverlay(id: id))
+                .overlay {
+                    if selection.wrappedValue == nil {
+                        RegionLongPressDragGestureOverlay(id: id)
+                    }
+                }
                 .padding(.leading, padding)
         }
     }
