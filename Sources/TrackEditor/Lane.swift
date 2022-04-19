@@ -30,8 +30,6 @@ extension EnvironmentValues {
 
 public struct Lane<Content, Header, SubLane> {
 
-    @EnvironmentObject var model: TrackModel
-
     @Environment(\.laneRange) var laneRange: Range<Int>
 
     @Environment(\.trackOptions) var options: TrackOptions

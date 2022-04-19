@@ -45,7 +45,6 @@ struct RegionDragGestureOverlay: View {
                         .onChanged { value in
                             LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
                                 .onDragGestureChanged(frame: frame, gesture: value, geometoryProxy: proxy) { frame, offset, period in
-                                    print("ge", frame)
                                     self.selection.wrappedValue = RegionSelection(id: regionID, laneID: laneID, position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset, period: period, state: .dragging)
                                 }
                         }
