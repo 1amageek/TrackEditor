@@ -1,5 +1,5 @@
 //
-//  EditingSelection.swift
+//  RegionSelection.swift
 //  
 //
 //  Created by nori on 2022/04/16.
@@ -8,19 +8,19 @@
 import SwiftUI
 
 
-public enum EditingGestureState: Hashable {
+public enum TrackGestureState: Hashable {
     case focused
     case pressing
     case dragging
 }
 
-public struct EditingSelection: Hashable {
+public struct RegionSelection: Hashable {
     public var id: String?
     public var tag: AnyHashable
     public var position: CGPoint
     public var size: CGSize
     public var period: Range<CGFloat>
-    public var state: EditingGestureState
+    public var state: TrackGestureState
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -34,7 +34,7 @@ public struct EditingSelection: Hashable {
     }
 }
 
-extension Binding: Equatable where Value == EditingSelection? {
+extension Binding: Equatable where Value == RegionSelection? {
     public static func == (lhs: Binding<Value>, rhs: Binding<Value>) -> Bool {
         lhs.wrappedValue == rhs.wrappedValue
     }

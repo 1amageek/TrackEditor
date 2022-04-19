@@ -38,7 +38,7 @@ public struct Region: Identifiable, LaneRegioning {
 
 struct ContentView: View {
 
-    @State var selection: EditingSelection?
+    @State var selection: RegionSelection?
 
     @State var regions: [Region] = [
         Region(id: "0", label: "0", start: 0, end: 1),
@@ -48,7 +48,7 @@ struct ContentView: View {
 
     var body: some View {
         TrackEditor(0..<20, selection: $selection) {
-            TrackLane {
+            Lane {
                 Arrange(regions) { region in
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.blue.opacity(0.7))
@@ -62,6 +62,7 @@ struct ContentView: View {
                 .frame(maxHeight: .infinity)
                 .background(Color.white)
             }
+            .tag("a")
         } header: {
             HStack {
                 Spacer()

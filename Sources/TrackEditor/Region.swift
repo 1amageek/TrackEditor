@@ -22,6 +22,11 @@ struct Region<Content>: View where Content: View {
 
     var body: some View {
         content()
+            .overlay {
+                Circle()
+                    .fill(Color.blue)
+                    .border(Color.white)
+            }
             .scaleEffect(scale)
             .onAppear {
                 if animation {

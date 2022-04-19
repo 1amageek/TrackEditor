@@ -7,28 +7,28 @@
 
 import SwiftUI
 
-private struct TrackLaneNamespaceKey: EnvironmentKey {
+private struct LaneNamespaceKey: EnvironmentKey {
     static let defaultValue: Namespace = .init()
 }
 
-private struct TrackLaneTagKey: EnvironmentKey {
+private struct LaneTagKey: EnvironmentKey {
     static let defaultValue: AnyHashable = UUID().uuidString
 }
 
 extension EnvironmentValues {
 
-    var trackLaneNamespace: Namespace {
-        get { self[TrackLaneNamespaceKey.self] }
-        set { self[TrackLaneNamespaceKey.self] = newValue }
+    var LaneNamespace: Namespace {
+        get { self[LaneNamespaceKey.self] }
+        set { self[LaneNamespaceKey.self] = newValue }
     }
 
-    var trackLaneTag: AnyHashable {
-        get { self[TrackLaneTagKey.self] }
-        set { self[TrackLaneTagKey.self] = newValue }
+    var LaneTag: AnyHashable {
+        get { self[LaneTagKey.self] }
+        set { self[LaneTagKey.self] = newValue }
     }
 }
 
-public struct TrackLane<Content, Header, SubTrackLane> {
+public struct Lane<Content, Header, SubLane> {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
@@ -36,9 +36,9 @@ public struct TrackLane<Content, Header, SubTrackLane> {
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
-    @Environment(\.selection) var selection: Binding<EditingSelection?>
+    @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Namespace var trackLaneNamespace: Namespace.ID
+    @Namespace var LaneNamespace: Namespace.ID
 
     @State var isSubTracksExpanded: Bool = false
 
@@ -48,45 +48,45 @@ public struct TrackLane<Content, Header, SubTrackLane> {
 
     var header: (ExpandAction) -> Header
 
-    var subTrackLane: () -> SubTrackLane
+    var subLane: () -> SubLane
 
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
 
 }
 
-extension TrackLane: View where Content: View, Header: View, SubTrackLane: View {
+extension Lane: View where Content: View, Header: View, SubLane: View {
 
     public init(
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+        @ViewBuilder subLane: @escaping () -> SubLane
     ) {
         self.content = content
         self.header = header
-        self.subTrackLane = subTrackLane
+        self.subLane = subLane
     }
 
     init<V>(
         _ tag: V,
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
-        @ViewBuilder subTrackLane: @escaping () -> SubTrackLane
+        @ViewBuilder subLane: @escaping () -> SubLane
     ) where V : Hashable {
         self._tag = tag
         self.content = content
         self.header = header
-        self.subTrackLane = subTrackLane
+        self.subLane = subLane
     }
 
     public func tag<V>(_ tag: V) -> some View where V : Hashable {
-        TrackLane(tag, content: content, header: header, subTrackLane: subTrackLane)
+        Lane(tag, content: content, header: header, subLane: subLane)
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            trackLane()
+            lane()
                 .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .coordinateSpace(name: trackLaneNamespace)
+                .coordinateSpace(name: LaneNamespace)
             subTrackView()
         }
     }
@@ -98,7 +98,7 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
     }
 
     @ViewBuilder
-    func trackLane() -> some View {
+    func lane() -> some View {
         let expand: ExpandAction = ExpandAction {
             withAnimation {
                 self.isSubTracksExpanded.toggle()
@@ -107,26 +107,27 @@ extension TrackLane: View where Content: View, Header: View, SubTrackLane: View 
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 content()
-                    .environment(\.trackLaneNamespace, _trackLaneNamespace)
-                    .environment(\.trackLaneTag, _tag)
+                    .environment(\.LaneNamespace, _LaneNamespace)
+                    .environment(\.LaneTag, _tag)
             } header: {
                 header(expand)
                     .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
         .frame(width: options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth, alignment: .leading)
-        .background(TrackLaneDragGestureBackground(tag: _tag))
+        .anchorPreference(key: LanePreferenceKey.self, value: .bounds, transform: { [LanePreference(id: _tag, bounds: $0)] })
+        .background(LaneDragGestureBackground(tag: _tag))
     }
 
     @ViewBuilder
     func subTrackView() -> some View {
         if isSubTracksExpanded {
-            subTrackLane()
+            subLane()
         }
     }
 }
 
-extension TrackLane where Content: View, Header: View, SubTrackLane == EmptyView {
+extension Lane where Content: View, Header: View, SubLane == EmptyView {
 
     public init(
         @ViewBuilder content: @escaping () -> Content,
@@ -134,7 +135,7 @@ extension TrackLane where Content: View, Header: View, SubTrackLane == EmptyView
     ) {
         self.content = content
         self.header = header
-        self.subTrackLane = { EmptyView() }
+        self.subLane = { EmptyView() }
     }
 }
 
@@ -144,11 +145,11 @@ public struct Arrange<Data, Content> {
 
     @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
-    @Environment(\.selection) var selection: Binding<EditingSelection?>
+    @Environment(\.selection) var selection: Binding<RegionSelection?>
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
-    @Environment(\.trackLaneTag) var trackLaneTag: AnyHashable
+    @Environment(\.LaneTag) var LaneTag: AnyHashable
 
     var data: [Data]
 
@@ -179,7 +180,7 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
             content(element)
                 .frame(width: width)
                 .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, bounds: $0)] })
-                .overlay(RegionLongPressDragGestureOverlay(id: id, tag: trackLaneTag))
+                .overlay(RegionLongPressDragGestureOverlay(id: id, tag: LaneTag))
                 .padding(.leading, padding)
         }
     }
@@ -226,7 +227,7 @@ extension EqualParts: View where Content: View {
     }
 }
 
-struct TrackLane_Previews: PreviewProvider {
+struct Lane_Previews: PreviewProvider {
 
     public struct Region: Identifiable, LaneRegioning {
         public var id: String
@@ -262,7 +263,7 @@ struct TrackLane_Previews: PreviewProvider {
 
         var body: some View {
             TrackEditor(0..<20) {
-                TrackLane {
+                Lane {
                     Arrange(regions) { region in
                         Color.green
                     }

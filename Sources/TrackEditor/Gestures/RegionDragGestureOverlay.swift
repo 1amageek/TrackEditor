@@ -13,7 +13,7 @@ struct RegionDragGestureOverlay: View {
 
     @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
-    @Environment(\.selection) var selection: Binding<EditingSelection?>
+    @Environment(\.selection) var selection: Binding<RegionSelection?>
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
@@ -39,7 +39,7 @@ struct RegionDragGestureOverlay: View {
                             let frame = frame.offsetBy(dx: value.translation.width, dy: value.translation.height)
                             let position = CGPoint(x: frame.midX, y: frame.midY)
                             let period = period(for: frame)
-                            selection.wrappedValue = EditingSelection(id: id, tag: tag, position: position, size: size, period: period, state: .dragging)
+                            selection.wrappedValue = RegionSelection(id: id, tag: tag, position: position, size: size, period: period, state: .dragging)
                         }
                         .onEnded { value in
                             var frame = frame.offsetBy(dx: value.predictedEndTranslation.width, dy: value.predictedEndTranslation.height)
@@ -48,7 +48,7 @@ struct RegionDragGestureOverlay: View {
                             let position = CGPoint(x: frame.midX, y: frame.midY)
                             let period = period(for: frame)
                             withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
-                                selection.wrappedValue = EditingSelection(id: id, tag: tag, position: position, size: size, period: period, state: .focused)
+                                selection.wrappedValue = RegionSelection(id: id, tag: tag, position: position, size: size, period: period, state: .focused)
                             }
                         }
                 )

@@ -1,5 +1,5 @@
 //
-//  TrackLaneDragGestureBackground.swift
+//  LaneDragGestureBackground.swift
 //  
 //
 //  Created by nori on 2022/04/18.
@@ -7,13 +7,13 @@
 
 import SwiftUI
 
-struct TrackLaneDragGestureBackground: View {
+struct LaneDragGestureBackground: View {
     
     @Environment(\.laneRange) var laneRange: Range<Int>
 
     @Environment(\.trackEditorOptions) var options: TrackEditorOptions
 
-    @Environment(\.selection) var selection: Binding<EditingSelection?>
+    @Environment(\.selection) var selection: Binding<RegionSelection?>
 
     @Environment(\.trackEditorNamespace) var namespace: Namespace
 
@@ -41,7 +41,7 @@ struct TrackLaneDragGestureBackground: View {
                                 let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: options.barWidth, height: options.trackHeight).offsetBy(dx: value.translation.width, dy: value.translation.height)
                                 let position = CGPoint(x: frame.midX, y: frame.midY)
                                 let period = period(for: frame)
-                                self.selection.wrappedValue = EditingSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .dragging)
+                                self.selection.wrappedValue = RegionSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .dragging)
                             }
                         }
                         .onEnded { value in
@@ -52,7 +52,7 @@ struct TrackLaneDragGestureBackground: View {
                                 let position = CGPoint(x: frame.midX, y: frame.midY)
                                 let period = period(for: frame)
                                 withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
-                                    selection.wrappedValue = EditingSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .focused)
+                                    selection.wrappedValue = RegionSelection(id: nil, tag: tag, position: position, size: frame.size, period: period, state: .focused)
                                 }
                             } else {
                                 selection.wrappedValue = nil

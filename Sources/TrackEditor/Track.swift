@@ -20,6 +20,19 @@ public struct ExpandAction {
     }
 }
 
+public struct RegionMoveAction {
+
+    var action: (RegionAddress) -> Void
+
+    init(_ action: @escaping (RegionAddress) -> Void) {
+        self.action = action
+    }
+
+    public func callAsFunction(address: RegionAddress) {
+        self.action(address)
+    }
+}
+
 public enum Interval {
     case month(Int)
     case day(Int)
@@ -52,7 +65,7 @@ public struct TrackEditorOptions {
     }
 }
 
-private struct TrackEditorLaneRangeKey: EnvironmentKey {
+private struct LaneRangeKey: EnvironmentKey {
     static let defaultValue: Range<Int> = 0..<100
 }
 
@@ -65,14 +78,14 @@ private struct TrackEditorNamespaceKey: EnvironmentKey {
 }
 
 private struct TrackEditorEditingKey: EnvironmentKey {
-    static let defaultValue: Binding<EditingSelection?> = .constant(nil)
+    static let defaultValue: Binding<RegionSelection?> = .constant(nil)
 }
 
 extension EnvironmentValues {
 
     var laneRange: Range<Int> {
-        get { self[TrackEditorLaneRangeKey.self] }
-        set { self[TrackEditorLaneRangeKey.self] = newValue }
+        get { self[LaneRangeKey.self] }
+        set { self[LaneRangeKey.self] = newValue }
     }
 
     var trackEditorOptions: TrackEditorOptions {
@@ -85,17 +98,25 @@ extension EnvironmentValues {
         set { self[TrackEditorNamespaceKey.self] = newValue }
     }
 
-    var selection: Binding<EditingSelection?> {
+    var selection: Binding<RegionSelection?> {
         get { self[TrackEditorEditingKey.self] }
         set { self[TrackEditorEditingKey.self] = newValue }
     }
 }
 
+final class TrackModel: ObservableObject {
+
+    var onTrackGestureChanged: (() -> Void)?
+    var onTrackGestureEneded: (() -> Void)?
+}
+
 public struct TrackEditor<Content, Header, Ruler, Placeholder> {
+
+    @StateObject var model: TrackModel = TrackModel()
 
     @Namespace var namespace: Namespace.ID
 
-    @Binding var selection: EditingSelection?
+    @Binding var selection: RegionSelection?
 
     var range: Range<Int>
 
@@ -107,19 +128,41 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
     var ruler: (Int) -> Ruler
 
-    var placeholder: (EditingSelection) -> Placeholder
+    var placeholder: (RegionSelection) -> Placeholder
 }
 
 extension TrackEditor: View where Content: View, Header: View, Ruler: View, Placeholder: View {
 
-    public init(
+    init(
         _ range: Range<Int>,
-        selection: Binding<EditingSelection?>,
+        selection: Binding<RegionSelection?>,
         options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
-        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
+        @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder,
+        onTrackGestureChanged: (() -> Void)? = nil,
+        onTrackGestureEneded: (() -> Void)? = nil
+    ) {
+        self.range = range
+        self._selection = selection
+        self.options = options
+        self.content = content
+        self.header = header
+        self.ruler = ruler
+        self.placeholder = placeholder
+        self.model.onTrackGestureChanged = onTrackGestureChanged
+        self.model.onTrackGestureEneded = onTrackGestureEneded
+    }
+
+    public init(
+        _ range: Range<Int>,
+        selection: Binding<RegionSelection?>,
+        options: TrackEditorOptions = TrackEditorOptions(),
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder header: @escaping () -> Header,
+        @ViewBuilder ruler: @escaping (Int) -> Ruler,
+        @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = selection
@@ -136,7 +179,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
-        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
+        @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = .constant(nil)
@@ -147,6 +190,19 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.placeholder = placeholder
     }
 
+    public func onTrackGesture(_ onChanged: @escaping () -> Void, onEnded: @escaping () -> Void) -> Self {
+        TrackEditor(range,
+                    selection: $selection,
+                    options: options,
+                    content: content,
+                    header: header,
+                    ruler: ruler,
+                    placeholder: placeholder,
+                    onTrackGestureChanged: onChanged,
+                    onTrackGestureEneded: onEnded
+        )
+    }
+
     var contentSize: CGSize {
         let width: CGFloat = options.barWidth * CGFloat(range.upperBound - range.lowerBound) + options.headerWidth
         let height: CGFloat = options.trackHeight
@@ -154,14 +210,21 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     }
 
     @ViewBuilder
-    var placeholder: some View {
+    func editingRegion(_ value: [LanePreference]) -> some View {
+        let _ = print(value)
         if let selection = selection {
-            Region(animation: selection.id == nil) {
-                placeholder(selection)
+            GeometryReader { geometory in
+
+                if let a = value[selection.tag] {
+                    let _ = print(geometory[a.bounds])
+                }
+                Region(animation: selection.id == nil) {
+                    placeholder(selection)
+                }
+                .frame(width: selection.size.width, height: selection.size.height)
+                .overlay(RegionDragGestureOverlay(id: selection.id, tag: selection.tag))
+                .position(x: selection.position.x, y: selection.position.y)
             }
-            .frame(width: selection.size.width, height: selection.size.height)
-            .overlay(RegionDragGestureOverlay(id: selection.id, tag: selection.tag))
-            .position(x: selection.position.x, y: selection.position.y)
         }
     }
 
@@ -183,8 +246,8 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                     .padding(.leading, options.headerWidth)
                     contentView
                         .frame(width: contentSize.width)
-                        .overlay {
-                            placeholder
+                        .overlayPreferenceValue(LanePreferenceKey.self) { value in
+                            editingRegion(value)
                         }
                         .coordinateSpace(name: namespace)
                 }
@@ -196,6 +259,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
             }
             .clipped()
         }
+        .environmentObject(model)
     }
 
     @ViewBuilder
@@ -289,8 +353,8 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 headerlessContentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
-                    .overlay {
-                        placeholder
+                    .overlayPreferenceValue(LanePreferenceKey.self) { value in
+                        editingRegion(value)
                     }
                     .coordinateSpace(name: namespace)
             }
@@ -317,7 +381,7 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
         _ range: Range<Int>,
         options: TrackEditorOptions = TrackEditorOptions(),
         @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder placeholder: @escaping (EditingSelection) -> Placeholder
+        @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder
     ) {
         self.range = range
         self._selection = .constant(nil)
@@ -450,12 +514,12 @@ struct TrackEditor_Previews: PreviewProvider {
 
     struct ContentView: View {
 
-        @State var selection: EditingSelection?
+        @State var selection: RegionSelection?
 
         var body: some View {
             TrackEditor(0..<20, selection: $selection) {
                 ForEach(data, id: \.id) { track in
-                    TrackLane {
+                    Lane {
                         Arrange(track.regions) { region in
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(.green.opacity(0.7))
@@ -496,12 +560,12 @@ struct TrackEditor_Previews: PreviewProvider {
                 .frame(maxWidth: .infinity)
                 .background(.bar)
                 .tag(index)
-            } placeholder: { editingSelection in
+            } placeholder: { RegionSelection in
                 RoundedRectangle(cornerRadius: 12)
                     .fill(.blue.opacity(0.7))
                     .padding(1)
                     .overlay {
-                        Text("\(editingSelection.id ?? "")")
+                        Text("\(RegionSelection.id ?? "")")
                     }
             }
         }
