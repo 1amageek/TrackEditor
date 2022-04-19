@@ -15,20 +15,23 @@ public enum TrackGestureState: Hashable {
 }
 
 public struct RegionSelection: Hashable {
-    public var id: String?
-    public var tag: AnyHashable
+    public var id: AnyHashable?
+    public var laneID: AnyHashable
     public var position: CGPoint
     public var size: CGSize
+    public var offset: CGSize
     public var period: Range<CGFloat>
     public var state: TrackGestureState
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-        hasher.combine(tag)
+        hasher.combine(laneID)
         hasher.combine(position.x)
         hasher.combine(position.y)
         hasher.combine(size.width)
         hasher.combine(size.height)
+        hasher.combine(offset.width)
+        hasher.combine(offset.height)
         hasher.combine(period)
         hasher.combine(state)
     }

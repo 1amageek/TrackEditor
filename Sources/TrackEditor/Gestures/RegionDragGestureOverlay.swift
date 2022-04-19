@@ -11,15 +11,23 @@ struct RegionDragGestureOverlay: View {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
-    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+    @Environment(\.trackOptions) var options: TrackOptions
 
     @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Environment(\.trackEditorNamespace) var namespace: Namespace
+    @Environment(\.onRegionDragGestureChanged) var onRegionDragGestureChanged: (() -> Void)?
 
-    var id: String?
+    @Environment(\.onRegionDragGestureEnded) var onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
 
-    var tag: AnyHashable
+    @Environment(\.trackNamespace) var namespace: Namespace
+
+    var regionID: AnyHashable?
+
+    var laneID: AnyHashable
+
+    var geometory: GeometryProxy
+
+    var preferenceValue: [LanePreference]
 
     func period(for frame: CGRect) -> Range<CGFloat> {
         let start = round((frame.minX - options.headerWidth) / options.barWidth)
@@ -30,26 +38,24 @@ struct RegionDragGestureOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let frame = proxy.frame(in: .named(namespace.wrappedValue))
-            let size = proxy.size
             Color.clear
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
-                            let frame = frame.offsetBy(dx: value.translation.width, dy: value.translation.height)
-                            let position = CGPoint(x: frame.midX, y: frame.midY)
-                            let period = period(for: frame)
-                            selection.wrappedValue = RegionSelection(id: id, tag: tag, position: position, size: size, period: period, state: .dragging)
+                            LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                .onDragGestureChanged(frame: frame, gesture: value, geometoryProxy: proxy) { frame, offset, period in
+                                    print("ge", frame)
+                                    self.selection.wrappedValue = RegionSelection(id: regionID, laneID: laneID, position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset, period: period, state: .dragging)
+                                }
                         }
                         .onEnded { value in
-                            var frame = frame.offsetBy(dx: value.predictedEndTranslation.width, dy: value.predictedEndTranslation.height)
-                            frame.origin.x = round((frame.minX - options.headerWidth) / options.barWidth) * options.barWidth + options.headerWidth
-                            frame.origin.y = round((frame.minY - options.rulerHeight) / options.trackHeight) * options.trackHeight + options.rulerHeight
-                            let position = CGPoint(x: frame.midX, y: frame.midY)
-                            let period = period(for: frame)
-                            withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
-                                selection.wrappedValue = RegionSelection(id: id, tag: tag, position: position, size: size, period: period, state: .focused)
-                            }
+                            LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                .onDragGestureEnded(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
+                                    withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
+                                        selection.wrappedValue = value
+                                    }
+                                }
                         }
                 )
         }

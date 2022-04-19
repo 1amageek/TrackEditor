@@ -9,9 +9,9 @@ import Foundation
 
 public struct RegionAddress: Identifiable, Hashable {
     public var id: AnyHashable
-    public var index: Int
-    public init<V>(id: V, index: Int) where V: Hashable {
+    public var range: Range<Int>
+    public init<V>(id: V, range: Range<Int>) where V: Hashable {
         self.id = AnyHashable(id)
-        self.index = index
+        self.range = range
     }
 }

@@ -9,6 +9,6 @@ import Foundation
 import CoreGraphics
 
 public protocol LaneRegioning {
-    func startRegion(_ laneRange: Range<Int>, options: TrackEditorOptions) -> CGFloat
-    func endRegion(_ laneRange: Range<Int>, options: TrackEditorOptions) -> CGFloat
+    func startRegion(_ laneRange: Range<Int>, options: TrackOptions) -> CGFloat
+    func endRegion(_ laneRange: Range<Int>, options: TrackOptions) -> CGFloat
 }

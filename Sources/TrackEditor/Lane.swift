@@ -11,38 +11,40 @@ private struct LaneNamespaceKey: EnvironmentKey {
     static let defaultValue: Namespace = .init()
 }
 
-private struct LaneTagKey: EnvironmentKey {
+private struct LaneIDKey: EnvironmentKey {
     static let defaultValue: AnyHashable = UUID().uuidString
 }
 
 extension EnvironmentValues {
 
-    var LaneNamespace: Namespace {
+    var laneNamespace: Namespace {
         get { self[LaneNamespaceKey.self] }
         set { self[LaneNamespaceKey.self] = newValue }
     }
 
-    var LaneTag: AnyHashable {
-        get { self[LaneTagKey.self] }
-        set { self[LaneTagKey.self] = newValue }
+    var laneID: AnyHashable {
+        get { self[LaneIDKey.self] }
+        set { self[LaneIDKey.self] = newValue }
     }
 }
 
 public struct Lane<Content, Header, SubLane> {
 
+    @EnvironmentObject var model: TrackModel
+
     @Environment(\.laneRange) var laneRange: Range<Int>
 
-    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+    @Environment(\.trackOptions) var options: TrackOptions
 
-    @Environment(\.trackEditorNamespace) var namespace: Namespace
+    @Environment(\.trackNamespace) var namespace: Namespace
 
     @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Namespace var LaneNamespace: Namespace.ID
+    @Namespace var laneNamespace: Namespace.ID
 
     @State var isSubTracksExpanded: Bool = false
 
-    var _tag: AnyHashable = UUID().uuidString
+    var laneID: AnyHashable = UUID().uuidString
 
     var content: () -> Content
 
@@ -51,7 +53,6 @@ public struct Lane<Content, Header, SubLane> {
     var subLane: () -> SubLane
 
     var trackEditorAreaWidth: CGFloat { options.barWidth * CGFloat(laneRange.count) }
-
 }
 
 extension Lane: View where Content: View, Header: View, SubLane: View {
@@ -67,12 +68,12 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
     }
 
     init<V>(
-        _ tag: V,
+        _ laneID: V,
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subLane: @escaping () -> SubLane
     ) where V : Hashable {
-        self._tag = tag
+        self.laneID = laneID
         self.content = content
         self.header = header
         self.subLane = subLane
@@ -85,16 +86,8 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
     public var body: some View {
         VStack(spacing: 0) {
             lane()
-                .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
-                .coordinateSpace(name: LaneNamespace)
             subTrackView()
         }
-    }
-
-    func period(for frame: CGRect) -> Range<CGFloat> {
-        let start = round((frame.minX - options.headerWidth) / options.barWidth)
-        let end = round((frame.maxX - options.headerWidth) / options.barWidth)
-        return start..<end
     }
 
     @ViewBuilder
@@ -107,16 +100,21 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
         LazyHStack(alignment: .top, spacing: 0, pinnedViews: .sectionHeaders) {
             Section {
                 content()
-                    .environment(\.LaneNamespace, _LaneNamespace)
-                    .environment(\.LaneTag, _tag)
+                    .environment(\.laneNamespace, _laneNamespace)
+                    .environment(\.laneID, laneID)
             } header: {
                 header(expand)
                     .frame(width: options.headerWidth, height: options.trackHeight)
             }
         }
-        .frame(width: options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth, alignment: .leading)
-        .anchorPreference(key: LanePreferenceKey.self, value: .bounds, transform: { [LanePreference(id: _tag, bounds: $0)] })
-        .background(LaneDragGestureBackground(tag: _tag))
+        .frame(width: trackEditorAreaWidth + options.headerWidth, height: options.trackHeight, alignment: .leading)
+        .coordinateSpace(name: laneNamespace)
+        .backgroundPreferenceValue(RegionPreferenceKey.self) { value in
+            Color.clear.anchorPreference(key: LanePreferenceKey.self, value: .bounds, transform: { [LanePreference(id: laneID, bounds: $0, regionPreferences: value)] })
+        }
+        .backgroundPreferenceValue(LanePreferenceKey.self, { value in
+            LaneDragGestureBackground(laneID: laneID, preferenceValue: value)
+        })
     }
 
     @ViewBuilder
@@ -143,13 +141,13 @@ public struct Arrange<Data, Content> {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
-    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+    @Environment(\.trackOptions) var options: TrackOptions
 
     @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Environment(\.trackEditorNamespace) var namespace: Namespace
+    @Environment(\.trackNamespace) var namespace: Namespace
 
-    @Environment(\.LaneTag) var LaneTag: AnyHashable
+    @Environment(\.laneID) var laneID: AnyHashable
 
     var data: [Data]
 
@@ -167,28 +165,23 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
         data.sorted(by: { $0.startRegion(laneRange, options: options) < $1.startRegion(laneRange, options: options) })
     }
 
-    func period(for frame: CGRect) -> Range<CGFloat> {
-        let start = round((frame.minX - options.headerWidth) / options.barWidth)
-        let end = round((frame.maxX - options.headerWidth) / options.barWidth)
-        return start..<end
-    }
-
     public var body: some View {
         ForEach(sortedData, id: \.id) { element in
-            let id = "\(element.id)"
             let (width, padding) = position(data: sortedData, element: element)
             content(element)
                 .frame(width: width)
-                .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, bounds: $0)] })
-                .overlay(RegionLongPressDragGestureOverlay(id: id, tag: LaneTag))
+                .allowsHitTesting(false)
+                .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, laneID: laneID, bounds: $0)] })
                 .padding(.leading, padding)
         }
     }
 
     func position(data: [Data], element: Data) -> (width: CGFloat, padding: CGFloat) {
+        let options = options
+        let laneRange = laneRange
         let index = data.firstIndex(where: { $0.id == element.id })!
         let prevIndex = index - 1
-        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options:options)
+        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options: options)
         let start = element.startRegion(laneRange, options:options)
         let end = element.endRegion(laneRange, options:options)
         let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
@@ -201,7 +194,7 @@ public struct EqualParts<Content> {
 
     @Environment(\.laneRange) var laneRange: Range<Int>
 
-    @Environment(\.trackEditorOptions) var options: TrackEditorOptions
+    @Environment(\.trackOptions) var options: TrackOptions
 
     var number: Int
 
@@ -227,77 +220,77 @@ extension EqualParts: View where Content: View {
     }
 }
 
-struct Lane_Previews: PreviewProvider {
-
-    public struct Region: Identifiable, LaneRegioning {
-        public var id: String
-        public var label: String
-        public var start: CGFloat
-        public var end: CGFloat
-        public init(
-            id: String,
-            label: String,
-            start: CGFloat,
-            end: CGFloat
-        ) {
-            self.id = id
-            self.label = label
-            self.start = start
-            self.end = end
-        }
-        func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
-            CGFloat(start)
-        }
-        func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
-            CGFloat(end)
-        }
-    }
-
-    struct ContentView: View {
-
-        let regions: [Region] = [
-            Region(id: "0", label: "0", start: 0, end: 1),
-            Region(id: "1", label: "1", start: 2, end: 3),
-            Region(id: "2", label: "2", start: 4, end: 5)
-        ]
-
-        var body: some View {
-            TrackEditor(0..<20) {
-                Lane {
-                    Arrange(regions) { region in
-                        Color.green
-                    }
-                } header: { expand in
-                    VStack {
-                        Spacer()
-                        Divider()
-                    }
-                    .frame(maxHeight: .infinity)
-                    .background(Color.white)
-                }
-                .tag("w")
-            } header: {
-                HStack {
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxWidth: .infinity)
-                .background(.bar)
-            } ruler: { index in
-                HStack {
-                    Text("\(index)")
-                        .padding(.horizontal, 12)
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxWidth: .infinity)
-                .background(.bar)
-                .tag(index)
-            }
-        }
-    }
-
-    static var previews: some View {
-        ContentView()
-    }
-}
+//struct Lane_Previews: PreviewProvider {
+//
+//    public struct Region: Identifiable, LaneRegioning {
+//        public var id: String
+//        public var label: String
+//        public var start: CGFloat
+//        public var end: CGFloat
+//        public init(
+//            id: String,
+//            label: String,
+//            start: CGFloat,
+//            end: CGFloat
+//        ) {
+//            self.id = id
+//            self.label = label
+//            self.start = start
+//            self.end = end
+//        }
+//        func startRegion(_ range: Range<Int>, options: TrackOptions) -> CGFloat {
+//            CGFloat(start)
+//        }
+//        func endRegion(_ range: Range<Int>, options: TrackOptions) -> CGFloat {
+//            CGFloat(end)
+//        }
+//    }
+//
+//    struct ContentView: View {
+//
+//        let regions: [Region] = [
+//            Region(id: "0", label: "0", start: 0, end: 1),
+//            Region(id: "1", label: "1", start: 2, end: 3),
+//            Region(id: "2", label: "2", start: 4, end: 5)
+//        ]
+//
+//        var body: some View {
+//            TrackEditor(0..<20) {
+//                Lane {
+//                    Arrange(regions) { region in
+//                        Color.green
+//                    }
+//                } header: { expand in
+//                    VStack {
+//                        Spacer()
+//                        Divider()
+//                    }
+//                    .frame(maxHeight: .infinity)
+//                    .background(Color.white)
+//                }
+//                .tag("w")
+//            } header: {
+//                HStack {
+//                    Spacer()
+//                    Divider()
+//                }
+//                .frame(maxWidth: .infinity)
+//                .background(.bar)
+//            } ruler: { index in
+//                HStack {
+//                    Text("\(index)")
+//                        .padding(.horizontal, 12)
+//                    Spacer()
+//                    Divider()
+//                }
+//                .frame(maxWidth: .infinity)
+//                .background(.bar)
+//                .tag(index)
+//            }
+//        }
+//    }
+//
+//    static var previews: some View {
+//        ContentView()
+//    }
+//}

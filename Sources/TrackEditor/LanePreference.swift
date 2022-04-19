@@ -14,9 +14,12 @@ struct LanePreference: Identifiable, Hashable {
 
     var bounds: Anchor<CGRect>
 
-    init(id: AnyHashable, bounds: Anchor<CGRect>) {
+    var regionPreferences: [RegionPreference]
+
+    init(id: AnyHashable, bounds: Anchor<CGRect>, regionPreferences: [RegionPreference]) {
         self.id = id
         self.bounds = bounds
+        self.regionPreferences = regionPreferences
     }
 
     func hash(into hasher: inout Hasher) {

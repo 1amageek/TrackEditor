@@ -27,11 +27,11 @@ public struct Region: Identifiable, LaneRegioning {
         self.end = end
     }
 
-    public func startRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
+    public func startRegion(_ range: Range<Int>, options: TrackOptions) -> CGFloat {
         CGFloat(start)
     }
 
-    public func endRegion(_ range: Range<Int>, options: TrackEditorOptions) -> CGFloat {
+    public func endRegion(_ range: Range<Int>, options: TrackOptions) -> CGFloat {
         CGFloat(end)
     }
 }
@@ -52,7 +52,7 @@ struct ContentView: View {
                 Arrange(regions) { region in
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.blue.opacity(0.7))
-                        .padding(1)
+                        .padding(1)                        
                 }
             } header: { expand in
                 VStack {
@@ -85,16 +85,21 @@ struct ContentView: View {
                 .fill(.blue)
                 .padding(1)
         }
-        .onChange(of: selection) { newValue in
-            if let selection = newValue {
-                if case .focused = selection.state {
-                    if let index = self.regions.firstIndex(where: { $0.id == selection.id }) {
-                        self.regions[index].start = selection.period.lowerBound
-                        self.regions[index].end = selection.period.upperBound
-                    }
-                }
-            }
-        }
+//        .onTrackGesture({
+//            
+//        }, onEnded: { address, moveAction in
+//            moveAction(address: address)
+//        })
+//        .onChange(of: selection) { newValue in
+//            if let selection = newValue {
+//                if case .focused = selection.state {
+//                    if let index = self.regions.firstIndex(where: { $0.id == selection.id }) {
+//                        self.regions[index].start = selection.period.lowerBound
+//                        self.regions[index].end = selection.period.upperBound
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
