@@ -30,20 +30,6 @@ struct Region<Content>: View where Content: View {
 
     var body: some View {
         content()
-            .overlay {
-                HStack {
-                    Spacer()
-                    Circle()
-                        .fill(Color.red)
-                        .gesture(
-                            DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                                .onChanged { value in
-                                    let increment = round(value.translation.width / options.barWidth)
-//                                    selection.wrappedValue?.size.width = incre
-                                }
-                        )
-                }
-            }
             .scaleEffect(scale)
             .onAppear {
                 if animation {

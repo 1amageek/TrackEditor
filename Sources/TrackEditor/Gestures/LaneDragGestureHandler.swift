@@ -33,6 +33,21 @@ struct LaneDragGestureHandler {
         self.onRegionDragGestureEnded = onRegionDragGestureEnded
     }
 
+    func makeRegionSelection(regionID: AnyHashable?, address: RegionAddress, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference]) -> RegionSelection? {
+        guard let preference = lanePreferences[address.id] else { return nil }
+        let laneFrame = geometoryProxy[preference.bounds]
+        let width = CGFloat(address.range.count) * options.barWidth
+        let height = options.trackHeight
+        let size = CGSize(width: width, height: height)
+        let positionX = CGFloat(address.range.lowerBound - laneRange.lowerBound) * options.barWidth + options.headerWidth + width / 2
+        let pssitionY = laneFrame.midY + options.rulerHeight
+        let position = CGPoint(x: positionX, y: pssitionY)
+        let period = CGFloat(address.range.lowerBound)..<CGFloat(address.range.upperBound)
+        let currentState: RegionSelection.State = RegionSelection.State(position: position, size: size, offset: .zero)
+        let startState = regionSelection?.startState ?? currentState
+        return RegionSelection(id: regionID, laneID: address.id, startState: startState, changes: (currentState, currentState), period: period, gestureState: .focused)
+    }
+
     func onDragGestureChanged(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
         let translateFrame = frame.offsetBy(dx: gesture.translation.width, dy: gesture.translation.height)
         let translatePosition = translateFrame.origin
@@ -42,13 +57,16 @@ struct LaneDragGestureHandler {
         let period = lowerBound..<upperBound
         let currentState: RegionSelection.State = RegionSelection.State(position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset)
         let startState = regionSelection?.startState ?? currentState
-        let selection = RegionSelection(id: id, laneID: laneID, startState: startState, currentState: currentState, period: period, gestureState: .dragging)
+        let before = regionSelection?.changes.before ?? currentState
+        let selection = RegionSelection(id: id, laneID: laneID, startState: startState, changes: (before, currentState), period: period, gestureState: .dragging)
         perform(selection)
     }
 
     func onDragGestureEnded(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
         let translateFrame = frame.offsetBy(dx: gesture.translation.width, dy: gesture.translation.height)
-        let position = CGPoint(x: translateFrame.minX - options.headerWidth, y: translateFrame.minY  - options.rulerHeight)
+        let x: CGFloat = max(translateFrame.minX - options.headerWidth, 0)
+        let y: CGFloat = max(translateFrame.minY - options.rulerHeight, 0)
+        let position = CGPoint(x: x, y: y)
         let lowerBound = Int(round((position.x) / options.barWidth))
         let upperBound = Int(round((position.x + translateFrame.width) / options.barWidth))
         let range = lowerBound..<upperBound
@@ -60,19 +78,7 @@ struct LaneDragGestureHandler {
             let laneID = preference.id
             let regionAddress = RegionAddress(id: laneID, range: range)
             let moveAction: RegionMoveAction = RegionMoveAction { address in
-                guard let preference = lanePreferences[address.id] else { return }
-                let laneFrame = geometoryProxy[preference.bounds]
-                let width = CGFloat(address.range.count) * options.barWidth
-                let height = options.trackHeight
-                let size = CGSize(width: width, height: height)
-                let positionX = CGFloat(address.range.lowerBound - laneRange.lowerBound) * options.barWidth + options.headerWidth + width / 2
-                let pssitionY = laneFrame.midY + options.rulerHeight
-                let position = CGPoint(x: positionX, y: pssitionY)
-                let period = CGFloat(address.range.lowerBound)..<CGFloat(address.range.upperBound)
-
-                let currentState: RegionSelection.State = RegionSelection.State(position: position, size: size, offset: .zero)
-                let startState = regionSelection?.startState ?? currentState
-                let selection = RegionSelection(id: id, laneID: address.id, startState: startState, currentState: currentState, period: period, gestureState: .focused)
+                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
             if let onRegionDragGestureEnded = onRegionDragGestureEnded {
@@ -83,19 +89,52 @@ struct LaneDragGestureHandler {
         } else {
             let regionAddress = RegionAddress(id: laneID, range: range)
             let moveAction: RegionMoveAction = RegionMoveAction { address in
-                guard let preference = lanePreferences[address.id] else { return }
-                let laneFrame = geometoryProxy[preference.bounds]
-                let width = CGFloat(address.range.count) * options.barWidth
-                let height = options.trackHeight
-                let size = CGSize(width: width, height: height)
-                let positionX = CGFloat(address.range.lowerBound - laneRange.lowerBound) * options.barWidth + options.headerWidth + width / 2
-                let pssitionY = laneFrame.midY + options.rulerHeight
-                let position = CGPoint(x: positionX, y: pssitionY)
-                let period = CGFloat(address.range.lowerBound)..<CGFloat(address.range.upperBound)
+                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
+                perform(selection)
+            }
+            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
+                onRegionDragGestureEnded(regionAddress, moveAction)
+            } else {
+                moveAction(address: regionAddress)
+            }
+        }
+    }
 
-                let currentState: RegionSelection.State = RegionSelection.State(position: position, size: size, offset: .zero)
-                let startState = regionSelection?.startState ?? currentState
-                let selection = RegionSelection(id: id, laneID: address.id, startState: startState, currentState: currentState, period: period, gestureState: .focused)
+    func onEdgeDragGestureChanged(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
+        let lowerBound = round((frame.minX - options.headerWidth) / options.barWidth)
+        let upperBound = round((frame.maxX - options.headerWidth) / options.barWidth)
+        let period = lowerBound..<upperBound
+        let currentState: RegionSelection.State = RegionSelection.State(position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: .zero)
+        let startState = regionSelection?.startState ?? currentState
+        let before = regionSelection?.changes.before ?? currentState
+        let selection = RegionSelection(id: id, laneID: laneID, startState: startState, changes: (before, currentState), period: period, gestureState: .edgeDragging)
+        perform(selection)
+    }
+
+    func onEdgeDragGestureEnded(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
+        let lowerBound = Int(round((frame.minX - options.headerWidth) / options.barWidth))
+        let upperBound = Int(round((frame.maxX - options.headerWidth) / options.barWidth))
+        let period = lowerBound..<upperBound
+        if let index = lanePreferences.firstIndex(where: { preference in
+            let frame = geometoryProxy[preference.bounds]
+            return frame.contains(gesture.location)
+        }) {
+            let preference = lanePreferences[index]
+            let laneID = preference.id
+            let regionAddress = RegionAddress(id: laneID, range: period)
+            let moveAction: RegionMoveAction = RegionMoveAction { address in
+                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
+                perform(selection)
+            }
+            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
+                onRegionDragGestureEnded(regionAddress, moveAction)
+            } else {
+                moveAction(address: regionAddress)
+            }
+        } else {
+            let regionAddress = RegionAddress(id: laneID, range: period)
+            let moveAction: RegionMoveAction = RegionMoveAction { address in
+                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
             if let onRegionDragGestureEnded = onRegionDragGestureEnded {

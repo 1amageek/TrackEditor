@@ -24,9 +24,7 @@ struct RegionDragGestureOverlay: View {
     var regionID: AnyHashable?
 
     var laneID: AnyHashable
-
-    var geometory: GeometryProxy
-
+    
     var preferenceValue: [LanePreference]
 
     func period(for frame: CGRect) -> Range<CGFloat> {

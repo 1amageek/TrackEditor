@@ -217,15 +217,14 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     @ViewBuilder
     func editingRegion(_ value: [LanePreference]) -> some View {
         if let selection = selection {
-            GeometryReader { proxy in
-                Region(animation: selection.id == nil) {
-                    placeholder(selection)
-                }
-                .frame(width: selection.currentState.size.width, height: selection.currentState.size.height)
-                .offset(selection.currentState.offset)
-                .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, geometory: proxy, preferenceValue: value))
-                .position(x: selection.currentState.position.x, y: selection.currentState.position.y)
+            Region(animation: selection.id == nil) {
+                placeholder(selection)
             }
+            .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
+            .offset(selection.changes.after.offset)
+            .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, preferenceValue: value))
+            .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, preferenceValue: value))
+            .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
         }
     }
 

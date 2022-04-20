@@ -12,6 +12,7 @@ public enum TrackGestureState: Hashable {
     case focused
     case pressing
     case dragging
+    case edgeDragging
 }
 
 public struct RegionSelection: Hashable {
@@ -19,15 +20,15 @@ public struct RegionSelection: Hashable {
     public var id: AnyHashable?
     public var laneID: AnyHashable
     public var startState: State
-    public var currentState: State
+    public var changes: (before: State, after: State)
     public var period: Range<CGFloat>
     public var gestureState: TrackGestureState
 
-    init(id: AnyHashable? = nil, laneID: AnyHashable, startState: RegionSelection.State, currentState: RegionSelection.State, period: Range<CGFloat>, gestureState: TrackGestureState) {
+    init(id: AnyHashable? = nil, laneID: AnyHashable, startState: RegionSelection.State, changes: (before: State, after: State), period: Range<CGFloat>, gestureState: TrackGestureState) {
         self.id = id
         self.laneID = laneID
         self.startState = startState
-        self.currentState = currentState
+        self.changes = changes
         self.period = period
         self.gestureState = gestureState
     }
@@ -35,8 +36,12 @@ public struct RegionSelection: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(laneID)
-        hasher.combine(period)
+        hasher.combine(changes.after)
         hasher.combine(gestureState)
+    }
+
+    public static func == (lhs: RegionSelection, rhs: RegionSelection) -> Bool {
+        lhs.hashValue == rhs.hashValue
     }
 }
 

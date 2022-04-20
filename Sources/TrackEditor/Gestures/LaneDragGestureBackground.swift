@@ -68,7 +68,7 @@ struct LaneDragGestureBackground: View {
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
                             if let selection = selection.wrappedValue, selection.gestureState != .focused {
-                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: selection.currentState.size.width, height: selection.currentState.size.height)
+                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: selection.changes.after.size.width, height: selection.changes.after.size.height)
                                 if let id = selection.id, let regionPreference = preferenceValue[laneID]?.regionPreferences[id] {
                                     frame = proxy[regionPreference.bounds].offsetBy(dx: 0, dy: options.rulerHeight)
                                 }
