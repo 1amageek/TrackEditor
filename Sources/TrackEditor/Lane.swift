@@ -111,7 +111,7 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
             Color.clear.anchorPreference(key: LanePreferenceKey.self, value: .bounds, transform: { [LanePreference(id: laneID, bounds: $0, regionPreferences: value)] })
         }
         .backgroundPreferenceValue(LanePreferenceKey.self, { value in
-            LaneDragGestureBackground(laneID: laneID, preferenceValue: value)
+            TrackDragGestureBackground(laneID: laneID, preferenceValue: value)
         })
     }
 

@@ -11,17 +11,20 @@ import TrackEditor
 public struct Region: Identifiable, LaneRegioning {
 
     public var id: String
+    public var laneID: String
     public var label: String
     public var start: CGFloat
     public var end: CGFloat
 
     public init(
         id: String,
+        laneID: String,
         label: String,
         start: CGFloat,
         end: CGFloat
     ) {
         self.id = id
+        self.laneID = laneID
         self.label = label
         self.start = start
         self.end = end
@@ -41,28 +44,34 @@ struct ContentView: View {
     @State var selection: RegionSelection?
 
     @State var regions: [Region] = [
-        Region(id: "0", label: "0", start: 0, end: 1),
-        Region(id: "1", label: "1", start: 2, end: 3),
-        Region(id: "2", label: "2", start: 4, end: 5)
+        Region(id: "0", laneID: "0", label: "0", start: 0, end: 1),
+        Region(id: "1", laneID: "0", label: "1", start: 2, end: 3),
+        Region(id: "2", laneID: "0", label: "2", start: 4, end: 5),
+        Region(id: "4", laneID: "1", label: "0", start: 0, end: 1),
+        Region(id: "5", laneID: "1", label: "1", start: 2, end: 3),
+        Region(id: "6", laneID: "1", label: "2", start: 4, end: 5)
     ]
 
     var body: some View {
         TrackEditor(0..<20, selection: $selection) {
-            Lane {
-                Arrange(regions) { region in
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.blue.opacity(0.7))
-                        .padding(1)                        
+            ForEach(["0", "1"], id: \.self) { laneID in
+                let data = regions.filter({ $0.laneID == laneID })
+                Lane {
+                    Arrange(data) { region in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.blue.opacity(0.7))
+                            .padding(1)
+                    }
+                } header: { expand in
+                    VStack {
+                        Spacer()
+                        Divider()
+                    }
+                    .frame(maxHeight: .infinity)
+                    .background(Color.white)
                 }
-            } header: { expand in
-                VStack {
-                    Spacer()
-                    Divider()
-                }
-                .frame(maxHeight: .infinity)
-                .background(Color.white)
+                .tag(laneID)
             }
-            .tag("a")
         } header: {
             HStack {
                 Spacer()
@@ -85,7 +94,7 @@ struct ContentView: View {
                 .fill(.blue)
                 .padding(1)
         }
-        .onTrackGestureEnded(onEnded: { address, moveAction in
+        .onTrackDragGestureEnded(onEnded: { address, moveAction in
             moveAction(address: address)
         })
         .onChange(of: selection) { newValue in

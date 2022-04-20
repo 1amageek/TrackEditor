@@ -1,5 +1,5 @@
 //
-//  LaneDragGestureHandler.swift
+//  TrackDragGestureHandler.swift
 //  
 //
 //  Created by nori on 2022/04/19.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct LaneDragGestureHandler {
+struct TrackDragGestureHandler {
 
     var options: TrackOptions
 
@@ -15,22 +15,22 @@ struct LaneDragGestureHandler {
 
     var regionSelection: RegionSelection?
 
-    var onRegionDragGestureChanged: (() -> Void)?
+    var onTrackDragGestureChanged: (() -> Void)?
 
-    var onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
+    var onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
 
     init(
         laneRange: Range<Int>,
         options: TrackOptions,
         regionSelection: RegionSelection?,
-        onRegionDragGestureChanged: (() -> Void)? = nil,
-        onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)? = nil
+        onTrackDragGestureChanged: (() -> Void)? = nil,
+        onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)? = nil
     ) {
         self.laneRange = laneRange
         self.options = options
         self.regionSelection = regionSelection
-        self.onRegionDragGestureChanged = onRegionDragGestureChanged
-        self.onRegionDragGestureEnded = onRegionDragGestureEnded
+        self.onTrackDragGestureChanged = onTrackDragGestureChanged
+        self.onTrackDragGestureEnded = onTrackDragGestureEnded
     }
 
     func makeRegionSelection(regionID: AnyHashable?, address: RegionAddress, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference]) -> RegionSelection? {
@@ -81,8 +81,8 @@ struct LaneDragGestureHandler {
                 guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
-            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
-                onRegionDragGestureEnded(regionAddress, moveAction)
+            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
+                onTrackDragGestureEnded(regionAddress, moveAction)
             } else {
                 moveAction(address: regionAddress)
             }
@@ -92,8 +92,8 @@ struct LaneDragGestureHandler {
                 guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
-            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
-                onRegionDragGestureEnded(regionAddress, moveAction)
+            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
+                onTrackDragGestureEnded(regionAddress, moveAction)
             } else {
                 moveAction(address: regionAddress)
             }
@@ -126,8 +126,8 @@ struct LaneDragGestureHandler {
                 guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
-            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
-                onRegionDragGestureEnded(regionAddress, moveAction)
+            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
+                onTrackDragGestureEnded(regionAddress, moveAction)
             } else {
                 moveAction(address: regionAddress)
             }
@@ -137,8 +137,8 @@ struct LaneDragGestureHandler {
                 guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
                 perform(selection)
             }
-            if let onRegionDragGestureEnded = onRegionDragGestureEnded {
-                onRegionDragGestureEnded(regionAddress, moveAction)
+            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
+                onTrackDragGestureEnded(regionAddress, moveAction)
             } else {
                 moveAction(address: regionAddress)
             }

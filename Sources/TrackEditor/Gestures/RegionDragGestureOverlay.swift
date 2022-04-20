@@ -15,9 +15,9 @@ struct RegionDragGestureOverlay: View {
 
     @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Environment(\.onRegionDragGestureChanged) var onRegionDragGestureChanged: (() -> Void)?
+    @Environment(\.onTrackDragGestureChanged) var onTrackDragGestureChanged: (() -> Void)?
 
-    @Environment(\.onRegionDragGestureEnded) var onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
+    @Environment(\.onTrackDragGestureEnded) var onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
 
     @Environment(\.trackNamespace) var namespace: Namespace
 
@@ -41,13 +41,13 @@ struct RegionDragGestureOverlay: View {
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
-                            LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                            TrackDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
                                 .onDragGestureChanged(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
                                     self.selection.wrappedValue = value
                                 }
                         }
                         .onEnded { value in
-                            LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                            TrackDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
                                 .onDragGestureEnded(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
                                     withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
                                         selection.wrappedValue = value

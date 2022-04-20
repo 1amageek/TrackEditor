@@ -81,11 +81,15 @@ private struct TrackEditorEditingKey: EnvironmentKey {
     static let defaultValue: Binding<RegionSelection?> = .constant(nil)
 }
 
-private struct RegionDragGestureChangedKey: EnvironmentKey {
+private struct TrackTapGestureKey: EnvironmentKey {
+    static let defaultValue: ((RegionSelection) -> Void)? = nil
+}
+
+private struct TrackDragGestureChangedKey: EnvironmentKey {
     static let defaultValue: (() -> Void)? = nil
 }
 
-private struct RegionDragGestureEndedKey: EnvironmentKey {
+private struct TrackDragGestureEndedKey: EnvironmentKey {
     static let defaultValue: ((RegionAddress, RegionMoveAction) -> Void)? = nil
 }
 
@@ -111,14 +115,20 @@ extension EnvironmentValues {
         set { self[TrackEditorEditingKey.self] = newValue }
     }
 
-    var onRegionDragGestureChanged: (() -> Void)? {
-        get { self[RegionDragGestureChangedKey.self] }
-        set { self[RegionDragGestureChangedKey.self] = newValue }
+    var onTrackTapGesture: ((RegionSelection) -> Void)? {
+        get { self[TrackTapGestureKey.self] }
+        set { self[TrackTapGestureKey.self] = newValue }
     }
 
-    var onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)? {
-        get { self[RegionDragGestureEndedKey.self] }
-        set { self[RegionDragGestureEndedKey.self] = newValue }
+
+    var onTrackDragGestureChanged: (() -> Void)? {
+        get { self[TrackDragGestureChangedKey.self] }
+        set { self[TrackDragGestureChangedKey.self] = newValue }
+    }
+
+    var onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)? {
+        get { self[TrackDragGestureEndedKey.self] }
+        set { self[TrackDragGestureEndedKey.self] = newValue }
     }
 }
 
@@ -140,9 +150,11 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
     var placeholder: (RegionSelection) -> Placeholder
 
-    var onRegionDragGestureChanged: (() -> Void)?
+    var _onTrackTapGesture: ((RegionSelection) -> Void)?
 
-    var onRegionDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
+    var _onTrackDragGestureChanged: (() -> Void)?
+
+    var _onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
 }
 
 extension TrackEditor: View where Content: View, Header: View, Ruler: View, Placeholder: View {
@@ -155,8 +167,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
         @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder,
-        onChanged: (() -> Void)?,
-        onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void
+        onTrackTapGesture: ((RegionSelection) -> Void)?,
+        onTrackDragGestureChanged: (() -> Void)?,
+        onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
     ) {
         self.laneRange = laneRange
         self._selection = selection
@@ -165,8 +178,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.header = header
         self.ruler = ruler
         self.placeholder = placeholder
-        self.onRegionDragGestureChanged = onChanged
-        self.onRegionDragGestureEnded = onEnded
+        self._onTrackTapGesture = onTrackTapGesture
+        self._onTrackDragGestureChanged = onTrackDragGestureChanged
+        self._onTrackDragGestureEnded = onTrackDragGestureEnded
     }
 
     public init(
@@ -204,12 +218,12 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.placeholder = placeholder
     }
 
-    public func onTrackGesture(_ onChanged: @escaping () -> Void, onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
-        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onChanged: onChanged, onEnded: onEnded)
+    public func onTrackTapGesture(peform: @escaping (RegionSelection) -> Void) -> Self {
+        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackTapGesture: peform, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: _onTrackDragGestureEnded)
     }
 
-    public func onTrackGestureEnded(onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
-        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onChanged: nil, onEnded: onEnded)
+    public func onTrackDragGestureEnded(onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
+        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackTapGesture: _onTrackTapGesture, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: onEnded)
     }
 
     var contentSize: CGSize {
@@ -260,8 +274,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                 .environment(\.laneRange, laneRange)
                 .environment(\.trackOptions, options)
                 .environment(\.selection, $selection)
-                .environment(\.onRegionDragGestureChanged, onRegionDragGestureChanged)
-                .environment(\.onRegionDragGestureEnded, onRegionDragGestureEnded)
+                .environment(\.onTrackTapGesture, _onTrackTapGesture)
+                .environment(\.onTrackDragGestureChanged, _onTrackDragGestureChanged)
+                .environment(\.onTrackDragGestureEnded, _onTrackDragGestureEnded)
             }
             .clipped()
         }
