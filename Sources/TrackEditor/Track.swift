@@ -82,7 +82,7 @@ private struct TrackEditorEditingKey: EnvironmentKey {
 }
 
 private struct TrackTapGestureKey: EnvironmentKey {
-    static let defaultValue: ((RegionSelection) -> Void)? = nil
+    static let defaultValue: ((RegionSelection?) -> Void)? = nil
 }
 
 private struct TrackDragGestureChangedKey: EnvironmentKey {
@@ -115,7 +115,7 @@ extension EnvironmentValues {
         set { self[TrackEditorEditingKey.self] = newValue }
     }
 
-    var onTrackTapGesture: ((RegionSelection) -> Void)? {
+    var onTrackTapGesture: ((RegionSelection?) -> Void)? {
         get { self[TrackTapGestureKey.self] }
         set { self[TrackTapGestureKey.self] = newValue }
     }
@@ -150,7 +150,7 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
     var placeholder: (RegionSelection) -> Placeholder
 
-    var _onTrackTapGesture: ((RegionSelection) -> Void)?
+    var _onTrackTapGesture: ((RegionSelection?) -> Void)?
 
     var _onTrackDragGestureChanged: (() -> Void)?
 
@@ -167,7 +167,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
         @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder,
-        onTrackTapGesture: ((RegionSelection) -> Void)?,
+        onTrackTapGesture: ((RegionSelection?) -> Void)?,
         onTrackDragGestureChanged: (() -> Void)?,
         onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
     ) {
@@ -218,7 +218,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.placeholder = placeholder
     }
 
-    public func onTrackTapGesture(peform: @escaping (RegionSelection) -> Void) -> Self {
+    public func onTrackTapGesture(peform: @escaping (RegionSelection?) -> Void) -> Self {
         TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackTapGesture: peform, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: _onTrackDragGestureEnded)
     }
 

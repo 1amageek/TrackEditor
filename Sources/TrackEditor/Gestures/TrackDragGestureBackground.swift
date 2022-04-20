@@ -15,7 +15,7 @@ struct TrackDragGestureBackground: View {
 
     @Environment(\.selection) var selection: Binding<RegionSelection?>
 
-    @Environment(\.onTrackTapGesture) var onTrackTapGesture: ((RegionSelection) -> Void)?
+    @Environment(\.onTrackTapGesture) var onTrackTapGesture: ((RegionSelection?) -> Void)?
 
     @Environment(\.onTrackDragGestureChanged) var onTrackDragGestureChanged: (() -> Void)?
 
@@ -62,8 +62,8 @@ struct TrackDragGestureBackground: View {
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if self.selection.wrappedValue != nil {
-                        self.selection.wrappedValue = nil
+                    if let onTrackTapGesture = onTrackTapGesture {
+                        onTrackTapGesture(selection.wrappedValue)
                     }
                 }
                 .gesture(
