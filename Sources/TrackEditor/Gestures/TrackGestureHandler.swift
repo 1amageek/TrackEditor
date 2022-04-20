@@ -1,5 +1,5 @@
 //
-//  TrackDragGestureHandler.swift
+//  TrackGestureHandler.swift
 //  
 //
 //  Created by nori on 2022/04/19.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct TrackDragGestureHandler {
+struct TrackGestureHandler {
 
     var options: TrackOptions
 
@@ -36,16 +36,21 @@ struct TrackDragGestureHandler {
     func makeRegionSelection(regionID: AnyHashable?, address: RegionAddress, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference]) -> RegionSelection? {
         guard let preference = lanePreferences[address.id] else { return nil }
         let laneFrame = geometoryProxy[preference.bounds]
+        print(address)
         let width = CGFloat(address.range.count) * options.barWidth
         let height = options.trackHeight
         let size = CGSize(width: width, height: height)
         let positionX = CGFloat(address.range.lowerBound - laneRange.lowerBound) * options.barWidth + options.headerWidth + width / 2
-        let pssitionY = laneFrame.midY + options.rulerHeight
+        let pssitionY = laneFrame.midY
         let position = CGPoint(x: positionX, y: pssitionY)
         let period = CGFloat(address.range.lowerBound)..<CGFloat(address.range.upperBound)
         let currentState: RegionSelection.State = RegionSelection.State(position: position, size: size, offset: .zero)
         let startState = regionSelection?.startState ?? currentState
         return RegionSelection(id: regionID, laneID: address.id, startState: startState, changes: (currentState, currentState), period: period, gestureState: .focused)
+    }
+
+    func onTapGesture() -> Void {
+        
     }
 
     func onDragGestureChanged(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
@@ -115,33 +120,15 @@ struct TrackDragGestureHandler {
         let lowerBound = Int(round((frame.minX - options.headerWidth) / options.barWidth))
         let upperBound = Int(round((frame.maxX - options.headerWidth) / options.barWidth))
         let period = lowerBound..<upperBound
-        if let index = lanePreferences.firstIndex(where: { preference in
-            let frame = geometoryProxy[preference.bounds]
-            return frame.contains(gesture.location)
-        }) {
-            let preference = lanePreferences[index]
-            let laneID = preference.id
-            let regionAddress = RegionAddress(id: laneID, range: period)
-            let moveAction: RegionMoveAction = RegionMoveAction { address in
-                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
-                perform(selection)
-            }
-            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
-                onTrackDragGestureEnded(regionAddress, moveAction)
-            } else {
-                moveAction(address: regionAddress)
-            }
+        let regionAddress = RegionAddress(id: laneID, range: period)
+        let moveAction: RegionMoveAction = RegionMoveAction { address in
+            guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
+            perform(selection)
+        }
+        if let onTrackDragGestureEnded = onTrackDragGestureEnded {
+            onTrackDragGestureEnded(regionAddress, moveAction)
         } else {
-            let regionAddress = RegionAddress(id: laneID, range: period)
-            let moveAction: RegionMoveAction = RegionMoveAction { address in
-                guard let selection = makeRegionSelection(regionID: id, address: address, geometoryProxy: geometoryProxy, lanePreferences: lanePreferences) else { return }
-                perform(selection)
-            }
-            if let onTrackDragGestureEnded = onTrackDragGestureEnded {
-                onTrackDragGestureEnded(regionAddress, moveAction)
-            } else {
-                moveAction(address: regionAddress)
-            }
+            moveAction(address: regionAddress)
         }
     }
 }

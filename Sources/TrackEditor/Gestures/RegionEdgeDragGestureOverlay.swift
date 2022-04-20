@@ -19,11 +19,13 @@ struct RegionEdgeDragGestureOverlay: View {
 
     @Environment(\.onTrackDragGestureEnded) var onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
 
-    @Environment(\.trackNamespace) var namespace: Namespace
+    @Environment(\.trackNamespace) var trackNamespace: Namespace
 
     var regionID: AnyHashable?
 
     var laneID: AnyHashable
+
+    var trackGeometory: GeometryProxy
 
     var preferenceValue: [LanePreference]
     
@@ -36,15 +38,15 @@ struct RegionEdgeDragGestureOverlay: View {
                         .contentShape(Rectangle())
                         .frame(width: 24)
                         .gesture(
-                            DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                            DragGesture(minimumDistance: 0, coordinateSpace: .named(trackNamespace.wrappedValue))
                                 .onChanged { value in
                                     let before = selection.changes.before
                                     let x = before.position.x - before.size.width / 2
                                     let y = before.position.y - before.size.height / 2
                                     let width = max(before.size.width + value.translation.width, options.barWidth)
                                     let frame = CGRect(x: x, y: y, width: width, height: before.size.height)
-                                    TrackDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
-                                        .onEdgeDragGestureChanged(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
+                                    TrackGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
+                                        .onEdgeDragGestureChanged(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: trackGeometory) { value in
                                             withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
                                                 self.selection.wrappedValue = value
                                             }
@@ -56,8 +58,8 @@ struct RegionEdgeDragGestureOverlay: View {
                                     let y = before.position.y - before.size.height / 2
                                     let width = max(before.size.width + value.translation.width, options.barWidth)
                                     let frame = CGRect(x: x, y: y, width: width, height: before.size.height)
-                                    TrackDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
-                                        .onEdgeDragGestureEnded(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
+                                    TrackGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onTrackDragGestureChanged: onTrackDragGestureChanged, onTrackDragGestureEnded: onTrackDragGestureEnded)
+                                        .onEdgeDragGestureEnded(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: trackGeometory, lanePreferences: preferenceValue) { value in
                                             withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
                                                 self.selection.wrappedValue = value
                                             }

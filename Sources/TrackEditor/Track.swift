@@ -235,14 +235,16 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     @ViewBuilder
     func editingRegion(_ value: [LanePreference]) -> some View {
         if let selection = selection {
-            Region(animation: selection.id == nil) {
-                placeholder(selection)
+            GeometryReader { proxy in
+                Region(animation: selection.id == nil) {
+                    placeholder(selection)
+                }
+                .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
+                .offset(selection.changes.after.offset)
+                .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: proxy, preferenceValue: value))
+                .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: proxy, preferenceValue: value))
+                .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
             }
-            .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
-            .offset(selection.changes.after.offset)
-            .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, preferenceValue: value))
-            .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, preferenceValue: value))
-            .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
         }
     }
 
@@ -268,6 +270,9 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                             editingRegion(value)
                         }
                         .coordinateSpace(name: namespace)
+                        .backgroundPreferenceValue(LanePreferenceKey.self) { value in
+                            TrackDragGestureBackground(preferenceValue: value)
+                        }
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                 .environment(\.trackNamespace, _namespace)

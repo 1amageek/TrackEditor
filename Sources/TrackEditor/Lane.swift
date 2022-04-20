@@ -110,9 +110,6 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
         .backgroundPreferenceValue(RegionPreferenceKey.self) { value in
             Color.clear.anchorPreference(key: LanePreferenceKey.self, value: .bounds, transform: { [LanePreference(id: laneID, bounds: $0, regionPreferences: value)] })
         }
-        .backgroundPreferenceValue(LanePreferenceKey.self, { value in
-            TrackDragGestureBackground(laneID: laneID, preferenceValue: value)
-        })
     }
 
     @ViewBuilder
