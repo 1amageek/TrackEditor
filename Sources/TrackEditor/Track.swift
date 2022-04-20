@@ -124,8 +124,6 @@ extension EnvironmentValues {
 
 public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
-//    @StateObject var model: TrackModel
-
     @Namespace var namespace: Namespace.ID
 
     @Binding var selection: RegionSelection?
@@ -225,7 +223,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                 }
                 .frame(width: selection.size.width, height: selection.size.height)
                 .offset(selection.offset)
-                .background(.brown)
                 .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, geometory: proxy, preferenceValue: value))
                 .position(x: selection.position.x, y: selection.position.y)
 
@@ -566,13 +563,10 @@ struct TrackEditor_Previews: PreviewProvider {
                 .frame(maxWidth: .infinity)
                 .background(.bar)
                 .tag(index)
-            } placeholder: { RegionSelection in
+            } placeholder: { regionSelection in
                 RoundedRectangle(cornerRadius: 12)
                     .fill(.blue.opacity(0.7))
                     .padding(1)
-                    .overlay {
-                        Text("\(RegionSelection.id ?? "")")
-                    }
             }
         }
     }

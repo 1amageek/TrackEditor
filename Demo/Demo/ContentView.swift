@@ -90,16 +90,16 @@ struct ContentView: View {
 //        }, onEnded: { address, moveAction in
 //            moveAction(address: address)
 //        })
-//        .onChange(of: selection) { newValue in
-//            if let selection = newValue {
-//                if case .focused = selection.state {
-//                    if let index = self.regions.firstIndex(where: { $0.id == selection.id }) {
-//                        self.regions[index].start = selection.period.lowerBound
-//                        self.regions[index].end = selection.period.upperBound
-//                    }
-//                }
-//            }
-//        }
+        .onChange(of: selection) { newValue in
+            if let selection = newValue, let id = selection.id {
+                if case .focused = selection.state {
+                    if let index = self.regions.firstIndex(where: { $0.id == String(describing: id) }) {
+                        self.regions[index].start = selection.period.lowerBound
+                        self.regions[index].end = selection.period.upperBound
+                    }
+                }
+            }
+        }
     }
 }
 
