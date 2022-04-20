@@ -9,6 +9,14 @@ import SwiftUI
 
 struct Region<Content>: View where Content: View {
 
+    @Environment(\.laneRange) var laneRange: Range<Int>
+
+    @Environment(\.trackOptions) var options: TrackOptions
+
+    @Environment(\.trackNamespace) var namespace: Namespace
+
+    @Environment(\.selection) var selection: Binding<RegionSelection?>
+
     @State var scale: CGFloat = 1
 
     var animation: Bool
@@ -22,11 +30,20 @@ struct Region<Content>: View where Content: View {
 
     var body: some View {
         content()
-//            .overlay {
-//                Circle()
-//                    .fill(Color.blue)
-////                    .border(Color.white)
-//            }
+            .overlay {
+                HStack {
+                    Spacer()
+                    Circle()
+                        .fill(Color.red)
+                        .gesture(
+                            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                                .onChanged { value in
+                                    let increment = round(value.translation.width / options.barWidth)
+//                                    selection.wrappedValue?.size.width = incre
+                                }
+                        )
+                }
+            }
             .scaleEffect(scale)
             .onAppear {
                 if animation {

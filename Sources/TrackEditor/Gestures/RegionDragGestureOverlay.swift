@@ -43,13 +43,13 @@ struct RegionDragGestureOverlay: View {
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
-                            LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
-                                .onDragGestureChanged(frame: frame, gesture: value, geometoryProxy: proxy) { frame, offset, period in
-                                    self.selection.wrappedValue = RegionSelection(id: regionID, laneID: laneID, position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset, period: period, state: .dragging)
+                            LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                .onDragGestureChanged(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
+                                    self.selection.wrappedValue = value
                                 }
                         }
                         .onEnded { value in
-                            LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                            LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection.wrappedValue, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
                                 .onDragGestureEnded(id: regionID, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
                                     withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
                                         selection.wrappedValue = value

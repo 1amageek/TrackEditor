@@ -221,11 +221,10 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                 Region(animation: selection.id == nil) {
                     placeholder(selection)
                 }
-                .frame(width: selection.size.width, height: selection.size.height)
-                .offset(selection.offset)
+                .frame(width: selection.currentState.size.width, height: selection.currentState.size.height)
+                .offset(selection.currentState.offset)
                 .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, geometory: proxy, preferenceValue: value))
-                .position(x: selection.position.x, y: selection.position.y)
-
+                .position(x: selection.currentState.position.x, y: selection.currentState.position.y)
             }
         }
     }

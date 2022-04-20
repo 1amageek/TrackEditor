@@ -92,7 +92,7 @@ struct ContentView: View {
 //        })
         .onChange(of: selection) { newValue in
             if let selection = newValue, let id = selection.id {
-                if case .focused = selection.state {
+                if case .focused = selection.gestureState {
                     if let index = self.regions.firstIndex(where: { $0.id == String(describing: id) }) {
                         self.regions[index].start = selection.period.lowerBound
                         self.regions[index].end = selection.period.upperBound

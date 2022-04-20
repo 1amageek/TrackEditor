@@ -67,14 +67,14 @@ struct LaneDragGestureBackground: View {
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                         .onChanged { value in
-                            if let selection = selection.wrappedValue, selection.state != .focused {
-                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: selection.size.width, height: selection.size.height)
+                            if let selection = selection.wrappedValue, selection.gestureState != .focused {
+                                var frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: selection.currentState.size.width, height: selection.currentState.size.height)
                                 if let id = selection.id, let regionPreference = preferenceValue[laneID]?.regionPreferences[id] {
                                     frame = proxy[regionPreference.bounds].offsetBy(dx: 0, dy: options.rulerHeight)
                                 }
-                                LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
-                                    .onDragGestureChanged(frame: frame, gesture: value, geometoryProxy: proxy) { frame, offset, period in
-                                        self.selection.wrappedValue = RegionSelection(id: selection.id, laneID: laneID, position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset, period: period, state: .dragging)
+                                LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                    .onDragGestureChanged(id: selection.id, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
+                                        self.selection.wrappedValue = value
                                     }
                             } else {
                                 var id: AnyHashable? = nil
@@ -83,16 +83,16 @@ struct LaneDragGestureBackground: View {
                                     id = regionPreference.id
                                     frame = proxy[regionPreference.bounds].offsetBy(dx: 0, dy: options.rulerHeight)
                                 }
-                                LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
-                                    .onDragGestureChanged(frame: frame, gesture: value, geometoryProxy: proxy) { frame, offset, period in
-                                        self.selection.wrappedValue = RegionSelection(id: id, laneID: laneID, position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset, period: period, state: .dragging)
+                                LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: nil, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                    .onDragGestureChanged(id: id, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
+                                        self.selection.wrappedValue = value
                                     }
                             }
                         }
                         .onEnded { value in
-                            if let selection = selection.wrappedValue, selection.state != .focused {
+                            if let selection = selection.wrappedValue, selection.gestureState != .focused {
                                 let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y - options.trackHeight / 2, width: options.barWidth, height: options.trackHeight)
-                                LaneDragGestureHandler(laneRange: laneRange, options: options, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
+                                LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
                                     .onDragGestureEnded(id: selection.id, laneID: selection.laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
                                         withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {
                                             self.selection.wrappedValue = value
