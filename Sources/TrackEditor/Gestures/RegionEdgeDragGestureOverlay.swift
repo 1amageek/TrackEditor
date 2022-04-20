@@ -32,9 +32,9 @@ struct RegionEdgeDragGestureOverlay: View {
             GeometryReader { proxy in
                 HStack(spacing: 0) {
                     Spacer()
-                    Rectangle()
-                        .fill(Color.red)
-                        .frame(width: 28)
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .frame(width: 24)
                         .gesture(
                             DragGesture(minimumDistance: 0, coordinateSpace: .global)
                                 .onChanged { value in

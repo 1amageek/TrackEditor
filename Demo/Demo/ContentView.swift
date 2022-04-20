@@ -85,17 +85,21 @@ struct ContentView: View {
                 .fill(.blue)
                 .padding(1)
         }
-//        .onTrackGesture({
-//            
-//        }, onEnded: { address, moveAction in
-//            moveAction(address: address)
-//        })
+        .onTrackGestureEnded(onEnded: { address, moveAction in
+            moveAction(address: address)
+        })
         .onChange(of: selection) { newValue in
-            if let selection = newValue, let id = selection.id {
-                if case .focused = selection.gestureState {
-                    if let index = self.regions.firstIndex(where: { $0.id == String(describing: id) }) {
-                        self.regions[index].start = selection.period.lowerBound
-                        self.regions[index].end = selection.period.upperBound
+            if let selection = newValue {
+                if let id = selection.id {
+                    if case .focused = selection.gestureState {
+                        if let index = self.regions.firstIndex(where: { $0.id == String(describing: id) }) {
+                            self.regions[index].start = selection.period.lowerBound
+                            self.regions[index].end = selection.period.upperBound
+                        }
+                    }
+                } else {
+                    if case .focused = selection.gestureState {
+                        print("new element")
                     }
                 }
             }

@@ -82,6 +82,7 @@ struct LaneDragGestureBackground: View {
                                 if let regionPreference = getRegionPreference(value: value, geometory: proxy, preferenceValue: preferenceValue) {
                                     id = regionPreference.id
                                     frame = proxy[regionPreference.bounds].offsetBy(dx: 0, dy: options.rulerHeight)
+                                    print(frame)
                                 }
                                 LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: nil, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
                                     .onDragGestureChanged(id: id, laneID: laneID, frame: frame, gesture: value, geometoryProxy: proxy) { value in
@@ -91,7 +92,7 @@ struct LaneDragGestureBackground: View {
                         }
                         .onEnded { value in
                             if let selection = selection.wrappedValue, selection.gestureState != .focused {
-                                let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y - options.trackHeight / 2, width: options.barWidth, height: options.trackHeight)
+                                let frame = CGRect(x: value.startLocation.x - options.barWidth / 2, y: value.startLocation.y, width: selection.changes.after.size.width, height: selection.changes.after.size.height)
                                 LaneDragGestureHandler(laneRange: laneRange, options: options, regionSelection: selection, onRegionDragGestureChanged: onRegionDragGestureChanged, onRegionDragGestureEnded: onRegionDragGestureEnded)
                                     .onDragGestureEnded(id: selection.id, laneID: selection.laneID, frame: frame, gesture: value, geometoryProxy: proxy, lanePreferences: preferenceValue) { value in
                                         withAnimation(.interactiveSpring(response: 0.1, dampingFraction: 0.6, blendDuration: 0)) {

@@ -155,7 +155,7 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
         @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder,
-        onChanged: @escaping () -> Void,
+        onChanged: (() -> Void)?,
         onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void
     ) {
         self.laneRange = laneRange
@@ -206,6 +206,10 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
 
     public func onTrackGesture(_ onChanged: @escaping () -> Void, onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
         TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onChanged: onChanged, onEnded: onEnded)
+    }
+
+    public func onTrackGestureEnded(onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
+        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onChanged: nil, onEnded: onEnded)
     }
 
     var contentSize: CGSize {
