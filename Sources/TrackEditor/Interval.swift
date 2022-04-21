@@ -17,7 +17,7 @@ public enum Interval {
 
 extension Interval {
 
-    func date(at location: Double, laneRange: Range<Int>, options: TrackOptions) -> Date {
+    public func date(at location: Double, laneRange: Range<Int>, options: TrackOptions) -> Date {
         let calendar = Foundation.Calendar(identifier: .iso8601)
         switch self {
             case .month(let int):
