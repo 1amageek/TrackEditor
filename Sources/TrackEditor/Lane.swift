@@ -165,7 +165,6 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
             let (width, padding) = position(data: sortedData, element: element)
             content(element)
                 .frame(width: width)
-                .allowsHitTesting(false)
                 .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: "\(element.id)", laneID: laneID, bounds: $0)] })
                 .padding(.leading, padding)
         }

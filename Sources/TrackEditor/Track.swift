@@ -124,7 +124,14 @@ extension EnvironmentValues {
     }
 }
 
+final class Model: ObservableObject {
+
+    var lanePreferences: [LanePreference] = []
+}
+
 public struct TrackEditor<Content, Header, Ruler, Placeholder> {
+
+    @StateObject var model: Model = Model()
 
     @Namespace var namespace: Namespace.ID
 
@@ -142,8 +149,6 @@ public struct TrackEditor<Content, Header, Ruler, Placeholder> {
 
     var placeholder: (RegionSelection) -> Placeholder
 
-    var _onTrackTapGesture: ((RegionSelection?) -> Void)?
-
     var _onTrackDragGestureChanged: (() -> Void)?
 
     var _onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
@@ -159,7 +164,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder ruler: @escaping (Int) -> Ruler,
         @ViewBuilder placeholder: @escaping (RegionSelection) -> Placeholder,
-        onTrackTapGesture: ((RegionSelection?) -> Void)?,
         onTrackDragGestureChanged: (() -> Void)?,
         onTrackDragGestureEnded: ((RegionAddress, RegionMoveAction) -> Void)?
     ) {
@@ -170,7 +174,6 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.header = header
         self.ruler = ruler
         self.placeholder = placeholder
-        self._onTrackTapGesture = onTrackTapGesture
         self._onTrackDragGestureChanged = onTrackDragGestureChanged
         self._onTrackDragGestureEnded = onTrackDragGestureEnded
     }
@@ -210,12 +213,8 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         self.placeholder = placeholder
     }
 
-    public func onTrackTapGesture(peform: @escaping (RegionSelection?) -> Void) -> Self {
-        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackTapGesture: peform, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: _onTrackDragGestureEnded)
-    }
-
     public func onTrackDragGestureEnded(onEnded: @escaping (RegionAddress, RegionMoveAction) -> Void) -> Self {
-        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackTapGesture: _onTrackTapGesture, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: onEnded)
+        TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: onEnded)
     }
 
     var contentSize: CGSize {
@@ -225,18 +224,16 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
     }
 
     @ViewBuilder
-    func editingRegion(_ value: [LanePreference]) -> some View {
+    func editingRegion(geometory: GeometryProxy, value: [LanePreference]) -> some View {
         if let selection = selection {
-            GeometryReader { proxy in
-                Region(animation: selection.id == nil) {
-                    placeholder(selection)
-                }
-                .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
-                .offset(selection.changes.after.offset)
-                .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: proxy, preferenceValue: value))
-                .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: proxy, preferenceValue: value))
-                .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
+            Region(animation: selection.id == nil) {
+                placeholder(selection)
             }
+            .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
+            .offset(selection.changes.after.offset)
+            .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory, preferenceValue: value))
+            .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory, preferenceValue: value))
+            .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
         }
     }
 
@@ -258,25 +255,28 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
                     .padding(.leading, options.headerWidth)
                     contentView
                         .frame(width: contentSize.width)
+                        .contentShape(Rectangle())
+                        .onTapGesture { }
+                        .gesture(TrackDragGesture(geometory: proxy))
                         .overlayPreferenceValue(LanePreferenceKey.self) { value in
-                            editingRegion(value)
+                            editingRegion(geometory: proxy, value: value)
                         }
                         .coordinateSpace(name: namespace)
-                        .backgroundPreferenceValue(LanePreferenceKey.self) { value in
-                            TrackDragGestureBackground(preferenceValue: value)
-                        }
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                 .environment(\.trackNamespace, _namespace)
                 .environment(\.laneRange, laneRange)
                 .environment(\.trackOptions, options)
                 .environment(\.selection, $selection)
-                .environment(\.onTrackTapGesture, _onTrackTapGesture)
                 .environment(\.onTrackDragGestureChanged, _onTrackDragGestureChanged)
                 .environment(\.onTrackDragGestureEnded, _onTrackDragGestureEnded)
+                .onPreferenceChange(LanePreferenceKey.self) { value in
+                    model.lanePreferences = value
+                }
             }
             .clipped()
         }
+        .environmentObject(model)
     }
 
     @ViewBuilder
@@ -371,7 +371,9 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
                 headerlessContentView
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                     .overlayPreferenceValue(LanePreferenceKey.self) { value in
-                        editingRegion(value)
+                        GeometryReader { geometory in
+                            editingRegion(geometory: geometory, value: value)
+                        }
                     }
                     .coordinateSpace(name: namespace)
             }

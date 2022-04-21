@@ -53,7 +53,7 @@ struct ContentView: View {
     ]
 
     var body: some View {
-        TrackEditor(0..<20, selection: $selection) {
+        TrackEditor(0..<10, selection: $selection) {
             ForEach(["0", "1"], id: \.self) { laneID in
                 let data = regions.filter({ $0.laneID == laneID })
                 Lane {
@@ -61,6 +61,9 @@ struct ContentView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(.blue.opacity(0.7))
                             .padding(1)
+                            .onTapGesture {
+                                print("Tap")
+                            }
                     }
                 } header: { expand in
                     VStack {
@@ -93,12 +96,9 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(.blue)
                 .padding(1)
-        }
-        .onTrackTapGesture { value in
-            if value != nil {
-                self.selection = nil
-            }
-            
+                .onTapGesture {
+                    print("Tap")
+                }
         }
         .onTrackDragGestureEnded(onEnded: { address, moveAction in
             moveAction(address: address)
