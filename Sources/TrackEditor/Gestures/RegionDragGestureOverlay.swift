@@ -9,6 +9,8 @@ import SwiftUI
 
 struct RegionDragGestureOverlay: View {
 
+    @EnvironmentObject var model: Model
+
     @Environment(\.laneRange) var laneRange: Range<Int>
 
     @Environment(\.trackOptions) var options: TrackOptions
@@ -27,7 +29,7 @@ struct RegionDragGestureOverlay: View {
 
     var trackGeometory: GeometryProxy
     
-    var preferenceValue: [LanePreference]
+    var preferenceValue: [LanePreference] { model.lanePreferences }
 
     func period(for frame: CGRect) -> Range<CGFloat> {
         let start = round((frame.minX - options.headerWidth) / options.barWidth)

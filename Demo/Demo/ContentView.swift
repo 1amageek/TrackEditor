@@ -53,14 +53,18 @@ struct ContentView: View {
     ]
 
     var body: some View {
-        TrackEditor(0..<10, selection: $selection) {
-            ForEach(["0", "1"], id: \.self) { laneID in
+        TrackEditor(0..<20, selection: $selection) {
+            ForEach((0..<2).map({ "\($0)" }), id: \.self) { laneID in
                 let data = regions.filter({ $0.laneID == laneID })
                 Lane {
                     Arrange(data) { region in
                         RoundedRectangle(cornerRadius: 12)
                             .fill(.blue.opacity(0.7))
                             .padding(1)
+                            .overlay {
+                                Text(region.id)
+                                    .foregroundColor(.white)
+                            }
                             .onTapGesture {
                                 print("Tap")
                             }
@@ -71,7 +75,7 @@ struct ContentView: View {
                         Divider()
                     }
                     .frame(maxHeight: .infinity)
-                    .background(Color.white)
+                    .background(.bar)
                 }
                 .tag(laneID)
             }
@@ -96,6 +100,11 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(.blue)
                 .padding(1)
+                .overlay {
+                    Text(selection?.id ?? "")
+                        .foregroundColor(.white)
+                        .bold()
+                }
                 .onTapGesture {
                     print("Tap")
                 }

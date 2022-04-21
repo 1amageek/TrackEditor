@@ -9,6 +9,8 @@ import SwiftUI
 
 struct RegionEdgeDragGestureOverlay: View {
 
+    @EnvironmentObject var model: Model
+
     @Environment(\.laneRange) var laneRange: Range<Int>
 
     @Environment(\.trackOptions) var options: TrackOptions
@@ -27,7 +29,7 @@ struct RegionEdgeDragGestureOverlay: View {
 
     var trackGeometory: GeometryProxy
 
-    var preferenceValue: [LanePreference]
+    var preferenceValue: [LanePreference] { model.lanePreferences }
     
     var body: some View {
         if let selection = selection.wrappedValue {

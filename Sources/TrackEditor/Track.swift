@@ -112,7 +112,6 @@ extension EnvironmentValues {
         set { self[TrackTapGestureKey.self] = newValue }
     }
 
-
     var onTrackDragGestureChanged: (() -> Void)? {
         get { self[TrackDragGestureChangedKey.self] }
         set { self[TrackDragGestureChangedKey.self] = newValue }
@@ -219,20 +218,20 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
 
     var contentSize: CGSize {
         let width: CGFloat = options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth
-        let height: CGFloat = options.trackHeight
+        let height: CGFloat = options.trackHeight * CGFloat(model.lanePreferences.count) + options.rulerHeight
         return CGSize(width: width, height: height)
     }
 
     @ViewBuilder
-    func editingRegion(geometory: GeometryProxy, value: [LanePreference]) -> some View {
+    func editingRegion(geometory: GeometryProxy) -> some View {
         if let selection = selection {
             Region(animation: selection.id == nil) {
                 placeholder(selection)
             }
             .frame(width: selection.changes.after.size.width, height: selection.changes.after.size.height)
             .offset(selection.changes.after.offset)
-            .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory, preferenceValue: value))
-            .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory, preferenceValue: value))
+            .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory))
+            .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory))
             .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
         }
     }
@@ -241,29 +240,48 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         GeometryReader { proxy in
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 ZStack(alignment: .topLeading) {
-                    LazyHStack(spacing: 0) {
-                        Section {
-                            ForEach(laneRange, id: \.self) { index in
-                                HStack(spacing: 0) {
-                                    Divider()
-                                    Spacer()
+                    GeometryReader { geometory in
+                        LazyHStack(spacing: 0) {
+                            Section {
+                                ForEach(laneRange, id: \.self) { index in
+                                    HStack(spacing: 0) {
+                                        Divider()
+                                        Spacer()
+                                    }
+                                    .frame(width: options.barWidth)
                                 }
-                                .frame(width: options.barWidth)
                             }
                         }
+                        .padding(.leading, options.headerWidth)
                     }
-                    .padding(.leading, options.headerWidth)
+
                     contentView
                         .frame(width: contentSize.width)
-                        .contentShape(Rectangle())
-                        .onTapGesture { }
-                        .gesture(TrackDragGesture(geometory: proxy))
-                        .overlayPreferenceValue(LanePreferenceKey.self) { value in
-                            editingRegion(geometory: proxy, value: value)
-                        }
-                        .coordinateSpace(name: namespace)
+                        .opacity(0)
+
+                    GeometryReader { geometory in
+                        contentView
+                            .frame(width: contentSize.width)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selection != nil {
+                                    selection = nil
+                                }
+                            }
+                            .gesture(TrackDragGesture(geometory: geometory))
+                            .overlay {
+                                editingRegion(geometory: geometory)
+                            }
+                    }
+                    .coordinateSpace(name: namespace)
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if selection != nil {
+                        selection = nil
+                    }
+                }
                 .environment(\.trackNamespace, _namespace)
                 .environment(\.laneRange, laneRange)
                 .environment(\.trackOptions, options)
@@ -372,7 +390,7 @@ extension TrackEditor where Content: View, Header == EmptyView, Ruler == EmptyVi
                     .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                     .overlayPreferenceValue(LanePreferenceKey.self) { value in
                         GeometryReader { geometory in
-                            editingRegion(geometory: geometory, value: value)
+                            editingRegion(geometory: geometory)
                         }
                     }
                     .coordinateSpace(name: namespace)
