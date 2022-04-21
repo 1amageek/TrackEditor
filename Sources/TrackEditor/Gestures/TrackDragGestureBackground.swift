@@ -29,7 +29,7 @@ import SwiftUI
 //        return start..<end
 //    }
 //
-//    var laneID: AnyHashable
+//    var laneID: String
 //
 //    var preferenceValue: [LanePreference]
 //
@@ -83,7 +83,7 @@ import SwiftUI
 //                                        self.selection.wrappedValue = value
 //                                    }
 //                            } else {
-//                                var id: AnyHashable? = nil
+//                                var id: String? = nil
 //                                let x = value.startLocation.x - options.barWidth / 2
 //                                let y = value.startLocation.y - options.trackHeight / 2
 //                                var frame = CGRect(x: x, y: y, width: options.barWidth, height: options.trackHeight)
@@ -192,7 +192,7 @@ struct TrackDragGestureBackground: View {
                                     }
                             } else {
                                 guard let laneID = getLanePreference(value: value, geometory: proxy, preferenceValue: preferenceValue)?.id else { return }
-                                var id: AnyHashable? = nil
+                                var id: String? = nil
                                 let x = value.startLocation.x - options.barWidth / 2
                                 let y = value.startLocation.y - options.trackHeight / 2
                                 var frame = CGRect(x: x, y: y, width: options.barWidth, height: options.trackHeight)

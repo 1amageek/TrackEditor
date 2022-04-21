@@ -33,14 +33,6 @@ public struct RegionMoveAction {
     }
 }
 
-public enum Interval {
-    case month(Int)
-    case day(Int)
-    case hour(Int)
-    case minute(Int)
-    case second(Int)
-}
-
 public struct TrackOptions {
     public var interval: Interval
     public var reference: DateComponents

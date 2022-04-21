@@ -10,13 +10,13 @@ import SwiftUI
 
 struct LanePreference: Identifiable, Hashable {
 
-    var id: AnyHashable
+    var id: String
 
     var bounds: Anchor<CGRect>
 
     var regionPreferences: [RegionPreference]
 
-    init(id: AnyHashable, bounds: Anchor<CGRect>, regionPreferences: [RegionPreference]) {
+    init(id: String, bounds: Anchor<CGRect>, regionPreferences: [RegionPreference]) {
         self.id = id
         self.bounds = bounds
         self.regionPreferences = regionPreferences
@@ -38,13 +38,13 @@ struct LanePreferenceKey: PreferenceKey {
 
 extension Array where Element == LanePreference {
 
-    subscript<V>(_ id: V) -> LanePreference? where V: Hashable {
+    subscript(_ id: String) -> LanePreference? {
         get {
-            self.first(where: { $0.id == AnyHashable(id) })
+            self.first(where: { $0.id == id })
         }
         set {
             if let newValue = newValue,
-               let index = self.firstIndex(where: { $0.id == AnyHashable(id) }) {
+               let index = self.firstIndex(where: { $0.id == id }) {
                 self[index] = newValue
             }
         }

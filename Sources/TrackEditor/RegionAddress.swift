@@ -8,10 +8,11 @@
 import Foundation
 
 public struct RegionAddress: Identifiable, Hashable {
-    public var id: AnyHashable
+    public var id: String
     public var range: Range<Int>
-    public init<V>(id: V, range: Range<Int>) where V: Hashable {
-        self.id = AnyHashable(id)
+
+    public init(id: String, range: Range<Int>) {
+        self.id = id
         self.range = range
     }
 }

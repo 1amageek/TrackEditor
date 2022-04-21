@@ -17,14 +17,14 @@ public enum TrackGestureState: Hashable {
 
 public struct RegionSelection: Hashable {
 
-    public var id: AnyHashable?
-    public var laneID: AnyHashable
+    public var id: String?
+    public var laneID: String
     public var startState: State
     public var changes: (before: State, after: State)
     public var period: Range<CGFloat>
     public var gestureState: TrackGestureState
 
-    init(id: AnyHashable? = nil, laneID: AnyHashable, startState: RegionSelection.State, changes: (before: State, after: State), period: Range<CGFloat>, gestureState: TrackGestureState) {
+    init(id: String? = nil, laneID: String, startState: RegionSelection.State, changes: (before: State, after: State), period: Range<CGFloat>, gestureState: TrackGestureState) {
         self.id = id
         self.laneID = laneID
         self.startState = startState

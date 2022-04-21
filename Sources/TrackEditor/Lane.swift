@@ -12,7 +12,7 @@ private struct LaneNamespaceKey: EnvironmentKey {
 }
 
 private struct LaneIDKey: EnvironmentKey {
-    static let defaultValue: AnyHashable = UUID().uuidString
+    static let defaultValue: String = UUID().uuidString
 }
 
 extension EnvironmentValues {
@@ -22,7 +22,7 @@ extension EnvironmentValues {
         set { self[LaneNamespaceKey.self] = newValue }
     }
 
-    var laneID: AnyHashable {
+    var laneID: String {
         get { self[LaneIDKey.self] }
         set { self[LaneIDKey.self] = newValue }
     }
@@ -42,7 +42,7 @@ public struct Lane<Content, Header, SubLane> {
 
     @State var isSubTracksExpanded: Bool = false
 
-    var laneID: AnyHashable = UUID().uuidString
+    var laneID: String = UUID().uuidString
 
     var content: () -> Content
 
@@ -65,19 +65,19 @@ extension Lane: View where Content: View, Header: View, SubLane: View {
         self.subLane = subLane
     }
 
-    init<V>(
-        _ laneID: V,
+    init(
+        _ laneID: String,
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder header: @escaping (ExpandAction) -> Header,
         @ViewBuilder subLane: @escaping () -> SubLane
-    ) where V : Hashable {
+    ) {
         self.laneID = laneID
         self.content = content
         self.header = header
         self.subLane = subLane
     }
 
-    public func tag<V>(_ tag: V) -> some View where V : Hashable {
+    public func tag(_ tag: String) -> some View {
         Lane(tag, content: content, header: header, subLane: subLane)
     }
 
@@ -142,7 +142,7 @@ public struct Arrange<Data, Content> {
 
     @Environment(\.trackNamespace) var namespace: Namespace
 
-    @Environment(\.laneID) var laneID: AnyHashable
+    @Environment(\.laneID) var laneID: String
 
     var data: [Data]
 
@@ -166,7 +166,7 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
             content(element)
                 .frame(width: width)
                 .allowsHitTesting(false)
-                .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: element.id, laneID: laneID, bounds: $0)] })
+                .anchorPreference(key: RegionPreferenceKey.self, value: .bounds, transform: { [RegionPreference(id: "\(element.id)", laneID: laneID, bounds: $0)] })
                 .padding(.leading, padding)
         }
     }

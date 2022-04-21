@@ -21,9 +21,9 @@ struct RegionEdgeDragGestureOverlay: View {
 
     @Environment(\.trackNamespace) var trackNamespace: Namespace
 
-    var regionID: AnyHashable?
+    var regionID: String?
 
-    var laneID: AnyHashable
+    var laneID: String
 
     var trackGeometory: GeometryProxy
 

@@ -33,10 +33,9 @@ struct TrackGestureHandler {
         self.onTrackDragGestureEnded = onTrackDragGestureEnded
     }
 
-    func makeRegionSelection(regionID: AnyHashable?, address: RegionAddress, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference]) -> RegionSelection? {
+    func makeRegionSelection(regionID: String?, address: RegionAddress, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference]) -> RegionSelection? {
         guard let preference = lanePreferences[address.id] else { return nil }
         let laneFrame = geometoryProxy[preference.bounds]
-        print(address)
         let width = CGFloat(address.range.count) * options.barWidth
         let height = options.trackHeight
         let size = CGSize(width: width, height: height)
@@ -53,7 +52,7 @@ struct TrackGestureHandler {
         
     }
 
-    func onDragGestureChanged(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
+    func onDragGestureChanged(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
         let translateFrame = frame.offsetBy(dx: gesture.translation.width, dy: gesture.translation.height)
         let translatePosition = translateFrame.origin
         let offset = gesture.translation
@@ -67,7 +66,7 @@ struct TrackGestureHandler {
         perform(selection)
     }
 
-    func onDragGestureEnded(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
+    func onDragGestureEnded(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
         let translateFrame = frame.offsetBy(dx: gesture.translation.width, dy: gesture.translation.height)
         let x: CGFloat = max(translateFrame.minX - options.headerWidth, 0)
         let y: CGFloat = max(translateFrame.minY - options.rulerHeight, 0)
@@ -105,7 +104,7 @@ struct TrackGestureHandler {
         }
     }
 
-    func onEdgeDragGestureChanged(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
+    func onEdgeDragGestureChanged(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
         let lowerBound = round((frame.minX - options.headerWidth) / options.barWidth)
         let upperBound = round((frame.maxX - options.headerWidth) / options.barWidth)
         let period = lowerBound..<upperBound
@@ -116,7 +115,7 @@ struct TrackGestureHandler {
         perform(selection)
     }
 
-    func onEdgeDragGestureEnded(id: AnyHashable?, laneID: AnyHashable, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
+    func onEdgeDragGestureEnded(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
         let lowerBound = Int(round((frame.minX - options.headerWidth) / options.barWidth))
         let upperBound = Int(round((frame.maxX - options.headerWidth) / options.barWidth))
         let period = lowerBound..<upperBound
