@@ -125,6 +125,8 @@ extension EnvironmentValues {
 
 final class Model: ObservableObject {
 
+    var geometory: GeometryProxy?
+
     var lanePreferences: [LanePreference] = []
 }
 
@@ -216,10 +218,8 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         TrackEditor(laneRange, selection: $selection, options: options, content: content, header: header, ruler: ruler, placeholder: placeholder, onTrackDragGestureChanged: _onTrackDragGestureChanged, onTrackDragGestureEnded: onEnded)
     }
 
-    var contentSize: CGSize {
-        let width: CGFloat = options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth
-        let height: CGFloat = options.trackHeight * CGFloat(model.lanePreferences.count) + options.rulerHeight
-        return CGSize(width: width, height: height)
+    var contentSizeWidth: CGFloat {
+        options.barWidth * CGFloat(laneRange.upperBound - laneRange.lowerBound) + options.headerWidth
     }
 
     @ViewBuilder
@@ -240,40 +240,40 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
         GeometryReader { proxy in
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 ZStack(alignment: .topLeading) {
-                    GeometryReader { geometory in
-                        LazyHStack(spacing: 0) {
-                            Section {
-                                ForEach(laneRange, id: \.self) { index in
-                                    HStack(spacing: 0) {
-                                        Divider()
-                                        Spacer()
+                    contentView
+                        .frame(width: contentSizeWidth)
+                        .background {
+                            LazyHStack(spacing: 0) {
+                                Section {
+                                    ForEach(laneRange, id: \.self) { index in
+                                        HStack(spacing: 0) {
+                                            Divider()
+                                            Spacer()
+                                        }
+                                        .frame(width: options.barWidth)
                                     }
-                                    .frame(width: options.barWidth)
                                 }
+                            }
+                            .padding(.leading, options.headerWidth)
+                        }
+                        .background {
+                            GeometryReader { geometory in
+                                Color.clear.onAppear { model.geometory = geometory }
                             }
                         }
-                        .padding(.leading, options.headerWidth)
-                    }
-
-                    contentView
-                        .frame(width: contentSize.width)
-                        .opacity(0)
-
-                    GeometryReader { geometory in
-                        contentView
-                            .frame(width: contentSize.width)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if selection != nil {
-                                    selection = nil
-                                }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selection != nil {
+                                selection = nil
                             }
-                            .gesture(TrackDragGesture(geometory: geometory))
-                            .overlay {
+                        }
+                        .gesture(TrackDragGesture())
+                        .overlay {
+                            GeometryReader { geometory in
                                 editingRegion(geometory: geometory)
                             }
-                    }
-                    .coordinateSpace(name: namespace)
+                        }
+                        .coordinateSpace(name: namespace)
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                 .contentShape(Rectangle())
@@ -357,7 +357,7 @@ extension TrackEditor where Content: View, Header: View, Ruler: View, Placeholde
                     .padding(.leading, options.headerWidth)
 
                     contentView
-                        .frame(width: contentSize.width)
+                        .frame(width: contentSizeWidth)
                         .coordinateSpace(name: namespace)
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)

@@ -54,7 +54,7 @@ struct ContentView: View {
 
     var body: some View {
         TrackEditor(0..<20, selection: $selection) {
-            ForEach((0..<2).map({ "\($0)" }), id: \.self) { laneID in
+            ForEach((0..<6).map({ "\($0)" }), id: \.self) { laneID in
                 let data = regions.filter({ $0.laneID == laneID })
                 Lane {
                     Arrange(data) { region in

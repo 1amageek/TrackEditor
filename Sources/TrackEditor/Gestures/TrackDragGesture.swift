@@ -25,7 +25,7 @@ struct TrackDragGesture: Gesture {
 
     @Environment(\.trackNamespace) var trackNamespace: Namespace
 
-    var geometory: GeometryProxy
+    var geometory: GeometryProxy { model.geometory! }
 
     var preferenceValue: [LanePreference] { model.lanePreferences }
 
