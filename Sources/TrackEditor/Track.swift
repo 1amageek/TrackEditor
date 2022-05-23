@@ -562,7 +562,7 @@ struct TrackEditor_Previews: PreviewProvider {
         @State var selection: RegionSelection?
 
         var body: some View {
-            TrackEditor(0..<20, selection: $selection) {
+            TrackEditor(4..<20, selection: $selection) {
                 ForEach(data, id: \.id) { track in
                     Lane {
                         Arrange(track.regions) { region in

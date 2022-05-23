@@ -71,8 +71,8 @@ struct TrackGestureHandler {
         let x: CGFloat = max(translateFrame.minX - options.headerWidth, 0)
         let y: CGFloat = max(translateFrame.minY - options.rulerHeight, 0)
         let position = CGPoint(x: x, y: y)
-        let lowerBound = Int(round((position.x) / options.barWidth))
-        let upperBound = Int(round((position.x + translateFrame.width) / options.barWidth))
+        let lowerBound = Int(round((position.x) / options.barWidth)) + laneRange.lowerBound
+        let upperBound = Int(round((position.x + translateFrame.width) / options.barWidth)) + laneRange.lowerBound
         let range = lowerBound..<upperBound
         if let index = lanePreferences.firstIndex(where: { preference in
             let frame = geometoryProxy[preference.bounds]
@@ -116,8 +116,8 @@ struct TrackGestureHandler {
     }
 
     func onEdgeDragGestureEnded(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, lanePreferences: [LanePreference], perform: @escaping (RegionSelection) -> Void) {
-        let lowerBound = Int(round((frame.minX - options.headerWidth) / options.barWidth))
-        let upperBound = Int(round((frame.maxX - options.headerWidth) / options.barWidth))
+        let lowerBound = Int(round((frame.minX - options.headerWidth) / options.barWidth)) + laneRange.lowerBound
+        let upperBound = Int(round((frame.maxX - options.headerWidth) / options.barWidth)) + laneRange.lowerBound
         let period = lowerBound..<upperBound
         let regionAddress = RegionAddress(id: laneID, range: period)
         let moveAction: RegionMoveAction = RegionMoveAction { address in
