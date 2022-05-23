@@ -233,6 +233,14 @@ extension TrackEditor: View where Content: View, Header: View, Ruler: View, Plac
             .overlay(RegionDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory))
             .overlay(RegionEdgeDragGestureOverlay(regionID: selection.id, laneID: selection.laneID, trackGeometory: geometory))
             .position(x: selection.changes.after.position.x, y: selection.changes.after.position.y) // Position is decided last
+            .backgroundPreferenceValue(SelectedRegionPreferenceKey.self) { value in
+                Color.clear
+                    .anchorPreference(
+                        key: SelectedRegionPreferenceKey.self,
+                        value: .bounds,
+                        transform: { SelectedRegionPreference(id: selection.id, laneID: selection.laneID, bounds: $0) }
+                    )
+            }
         }
     }
 
