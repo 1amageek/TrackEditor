@@ -44,16 +44,16 @@ struct ContentView: View {
     @State var selection: RegionSelection?
 
     @State var regions: [Region] = [
-        Region(id: "0", laneID: "0", label: "0", start: 0, end: 1),
+//        Region(id: "0", laneID: "0", label: "0", start: 0, end: 1),
         Region(id: "1", laneID: "0", label: "1", start: 2, end: 3),
         Region(id: "2", laneID: "0", label: "2", start: 4, end: 5),
-        Region(id: "4", laneID: "1", label: "0", start: 0, end: 1),
-        Region(id: "5", laneID: "1", label: "1", start: 2, end: 3),
-        Region(id: "6", laneID: "1", label: "2", start: 4, end: 5)
+//        Region(id: "4", laneID: "1", label: "0", start: 0, end: 1),
+//        Region(id: "5", laneID: "1", label: "1", start: 2, end: 3),
+//        Region(id: "6", laneID: "1", label: "2", start: 4, end: 5)
     ]
 
     var body: some View {
-        TrackEditor(0..<20, selection: $selection) {
+        TrackEditor(4..<20, selection: $selection) {
             ForEach((0..<6).map({ "\($0)" }), id: \.self) { laneID in
                 let data = regions.filter({ $0.laneID == laneID })
                 Lane {

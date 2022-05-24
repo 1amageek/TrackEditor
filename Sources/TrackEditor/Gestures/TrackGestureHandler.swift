@@ -56,8 +56,8 @@ struct TrackGestureHandler {
         let translateFrame = frame.offsetBy(dx: gesture.translation.width, dy: gesture.translation.height)
         let translatePosition = translateFrame.origin
         let offset = gesture.translation
-        let lowerBound = round((translatePosition.x) / translateFrame.width)
-        let upperBound = round((translatePosition.x + translateFrame.width) / translateFrame.width)
+        let lowerBound = round((translatePosition.x - options.headerWidth) / translateFrame.width) + CGFloat(laneRange.lowerBound)
+        let upperBound = round((translatePosition.x + translateFrame.width - options.headerWidth) / translateFrame.width) + CGFloat(laneRange.lowerBound)
         let period = lowerBound..<upperBound
         let currentState: RegionSelection.State = RegionSelection.State(position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: offset)
         let startState = regionSelection?.startState ?? currentState
@@ -105,8 +105,8 @@ struct TrackGestureHandler {
     }
 
     func onEdgeDragGestureChanged(id: String?, laneID: String, frame: CGRect, gesture: DragGesture.Value, geometoryProxy: GeometryProxy, perform: @escaping (RegionSelection) -> Void) {
-        let lowerBound = round((frame.minX - options.headerWidth) / options.barWidth)
-        let upperBound = round((frame.maxX - options.headerWidth) / options.barWidth)
+        let lowerBound = round((frame.minX - options.headerWidth) / options.barWidth) + CGFloat(laneRange.lowerBound)
+        let upperBound = round((frame.maxX - options.headerWidth) / options.barWidth) + CGFloat(laneRange.lowerBound)
         let period = lowerBound..<upperBound
         let currentState: RegionSelection.State = RegionSelection.State(position: CGPoint(x: frame.midX, y: frame.midY), size: frame.size, offset: .zero)
         let startState = regionSelection?.startState ?? currentState

@@ -50,9 +50,10 @@ extension Arrange: View where Data: Identifiable & LaneRegioning, Content: View 
         let laneRange = laneRange
         let index = data.firstIndex(where: { $0.id == element.id })!
         let prevIndex = index - 1
-        let prevEnd = prevIndex < 0 ? CGFloat(laneRange.lowerBound) : sortedData[prevIndex].endRegion(laneRange, options: options)
-        let start = element.startRegion(laneRange, options:options)
-        let end = element.endRegion(laneRange, options:options)
+        let min = CGFloat(laneRange.lowerBound)
+        let prevEnd = prevIndex < 0 ? min : max(min, data[prevIndex].endRegion(laneRange, options: options))
+        let start = element.startRegion(laneRange, options: options)
+        let end = element.endRegion(laneRange, options: options)
         let leadingPadding = CGFloat(start - prevEnd) * options.barWidth
         let width = CGFloat(end - start) * options.barWidth
         return (width: width, padding: leadingPadding)
